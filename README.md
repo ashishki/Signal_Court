@@ -3,6 +3,8 @@
 Proof console for AXL-routed market thesis review in the ETHGlobal OpenAgents /
 Gensyn track.
 
+Status: research reference. The project is preserved as a proof-console artifact for Entropy Core and trader intelligence design. Roadmap: `docs/PROJECT_PLAN.md`.
+
 Do not trust the memo. Verify every specialist behind it.
 
 Signal Count turns one market thesis into an auditable risk memo with visible
