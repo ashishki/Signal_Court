@@ -34,8 +34,6 @@ APP_PORT="${APP_PORT:-8004}"
 APP_URL="http://127.0.0.1:${APP_PORT}"
 MESH_DIR="${MESH_DIR:-${RUNTIME_DIR}/axl-mesh}"
 INDEXER_CONFIRMATIONS="${INDEXER_CONFIRMATIONS:-0}"
-NATIVE_TEST_PAYOUT_WEI="${NATIVE_TEST_PAYOUT_WEI:-1000000000}"
-NATIVE_TEST_PAYOUT_MAX_WEI="${NATIVE_TEST_PAYOUT_MAX_WEI:-1000000000000}"
 FULL_BATTLE_JOB_TIMEOUT_SECONDS="${FULL_BATTLE_JOB_TIMEOUT_SECONDS:-1500}"
 
 START_TS="$(date +%s)"
@@ -105,7 +103,7 @@ section() {
 banner() {
   printf '%b\n' "${C_BOLD}${C_CYAN}"
   printf '  Signal Count Full Battle Demo\n'
-  printf '  AXL mesh -> specialist swarm -> verifier -> REE -> Gensyn Testnet -> indexer\n'
+  printf '  AXL mesh -> specialist swarm -> verifier -> REE -> contribution receipts -> indexer\n'
   printf '%b\n\n' "${C_RESET}"
   append_summary "Signal Count Full Battle Demo"
 }
@@ -232,7 +230,6 @@ run_preflight_only() {
 
   check_command curl
   check_command docker
-  check_command forge
   check_command git
   check_command openssl
   check_file_executable "${PYTHON}"
@@ -311,10 +308,9 @@ section "Preflight"
 
 require_command curl
 require_command docker
-require_command forge
 require_command git
 require_command openssl
-ok "Required commands present: curl docker forge git openssl"
+ok "Required commands present: curl docker git openssl"
 
 ensure_official_ree_repo() {
   if [[ -x "${REE_REPO_DIR}/ree.sh" ]]; then
@@ -385,45 +381,6 @@ PY
 )"
 export NODE_WALLET_ADDRESS
 
-deploy_reputation_vault_if_needed() {
-  local current="${SIGNAL_REPUTATION_VAULT_ADDRESS:-}"
-  if [[ -n "${current}" && "${current}" != "0x0000000000000000000000000000000000000000" ]]; then
-    ok "Using existing reputation vault ${current}"
-    return 0
-  fi
-
-  section "Deploy Reputation Vault"
-  log "Deploying SignalReputationVault once for native test payout receipts"
-  forge script contracts/script/DeployReputationVault.s.sol \
-    --rpc-url "${GENSYN_RPC_URL}" \
-    --broadcast \
-    >"${LOG_DIR}/deploy-reputation-vault.log" 2>&1
-
-  local address
-  address="$("${PYTHON}" - <<'PY'
-import json
-from pathlib import Path
-
-paths = sorted(Path("broadcast/DeployReputationVault.s.sol").glob("*/run-latest.json"))
-for path in reversed(paths):
-    payload = json.loads(path.read_text())
-    for tx in payload.get("transactions", []):
-        if tx.get("contractName") == "SignalReputationVault" and tx.get("contractAddress"):
-            print(tx["contractAddress"])
-            raise SystemExit(0)
-raise SystemExit("Could not find SignalReputationVault address in forge broadcast output")
-PY
-)"
-  export SIGNAL_REPUTATION_VAULT_ADDRESS="${address}"
-  {
-    printf 'SIGNAL_REPUTATION_VAULT_ADDRESS=%s\n' "${SIGNAL_REPUTATION_VAULT_ADDRESS}"
-    printf 'NODE_WALLET_ADDRESS=%s\n' "${NODE_WALLET_ADDRESS}"
-  } >"${ENV_FILE}"
-  ok "Deployed reputation vault ${SIGNAL_REPUTATION_VAULT_ADDRESS}"
-}
-
-deploy_reputation_vault_if_needed
-
 export MESH_DIR
 export APP_PORT
 export SIGNAL_COUNT_BATTLE_RUNTIME_DIR="${RUNTIME_DIR}"
@@ -434,14 +391,14 @@ export SIGNAL_COUNT_CHAIN_RECEIPTS=1
 export SIGNAL_COUNT_REE_ENABLED=1
 export GENSYN_SDK_COMMAND="${REE_REPO_DIR}/ree.sh"
 export REE_CPU_ONLY=1
-export SIGNAL_COUNT_NATIVE_TEST_PAYOUTS=1
-export NATIVE_TEST_PAYOUT_WEI
-export NATIVE_TEST_PAYOUT_MAX_WEI
+export SIGNAL_REPUTATION_VAULT_ADDRESS="0x0000000000000000000000000000000000000000"
+export SIGNAL_COUNT_NATIVE_TEST_PAYOUTS=0
 export FULL_BATTLE_JOB_TIMEOUT_SECONDS
 export AXL_LOCAL_BASE_URL="http://127.0.0.1:9022"
 export AXL_MCP_ROUTER_URL="http://127.0.0.1:9014"
 export AXL_DISPATCH_TIMEOUT_SECONDS="${FULL_BATTLE_JOB_TIMEOUT_SECONDS}"
 export MCP_ROUTER_FORWARD_TIMEOUT_SECONDS="${FULL_BATTLE_JOB_TIMEOUT_SECONDS}"
+warn "Runtime reputation and payout transactions are unavailable: the normal AXL transport returns unsigned SpecialistResponse objects"
 
 section "AXL Mesh"
 log "Preparing persistent AXL mesh in ${MESH_DIR}"
@@ -494,7 +451,7 @@ start_bg app scripts/run_app_mesh_live.sh
 wait_http "${APP_URL}/health" "Signal Count app" 90
 
 section "Live Job"
-log "Submitting live job through AXL, REE, chain receipts, and tiny native test payouts"
+log "Submitting live job through AXL, REE, and task/contribution chain receipts"
 SUBMIT_LOG="${LOG_DIR}/job-submit.log"
 "${PYTHON}" - <<'PY' >"${SUBMIT_LOG}" 2>&1 &
 import json
@@ -535,7 +492,7 @@ SUBMIT_PID="$!"
 while kill -0 "${SUBMIT_PID}" >/dev/null 2>&1; do
   sleep 30
   if kill -0 "${SUBMIT_PID}" >/dev/null 2>&1; then
-    log "Live job still running: waiting on AXL dispatch, REE, chain receipts, or payouts"
+    log "Live job still running: waiting on AXL dispatch, REE, or chain receipts"
   fi
 done
 if ! wait "${SUBMIT_PID}"; then
@@ -633,16 +590,34 @@ ree = [
     for item in run_metadata.get("chain_receipts", [])
     if isinstance(item, dict) and item.get("ree_status")
 ]
+reputation_receipts = [
+    item for item in receipts if item.get("kind") == "reputation"
+]
+if reputation_receipts:
+    raise SystemExit(
+        "Unexpected reputation receipt: unsigned runtime responses must not receive credit"
+    )
+credit_eligible_updates = [
+    item for item in run_metadata.get("reputation_updates", [])
+    if isinstance(item, dict) and item.get("credit_eligible") is True
+]
+if credit_eligible_updates:
+    raise SystemExit(
+        "Unexpected credit-eligible update from unsigned SpecialistResponse transport"
+    )
 projection = asyncio.run(JobStore().get_indexed_chain_projection())
 print(f"roles: {roles}")
 print(f"chain receipts: {len(receipts)}")
 print(f"REE status: {ree[0] if ree else 'not present'}")
 print(
+    "runtime reputation/payout transactions: unavailable "
+    "(unsigned SpecialistResponse transport)"
+)
+print(
     "indexed events: "
     f"tasks={len(projection.tasks)}, "
     f"contributions={len(projection.contributions)}, "
-    f"verifications={len(projection.verifications)}, "
-    f"reputation={len(projection.reputations)}"
+    f"verifications={len(projection.verifications)}"
 )
 PY
 

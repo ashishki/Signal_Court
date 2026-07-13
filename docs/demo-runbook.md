@@ -39,9 +39,9 @@ Conditional 90-second flow after a newly verified prewarm:
 ```text
 Signal Count is a proof console for AXL-routed AI analyst work. A coordinator
 routes regime, narrative, and risk specialists through AXL, then the UI lets a
-judge verify the run: peer IDs, wallet attestations, output hashes, REE receipt
-metadata, Gensyn Testnet txs, and source quality. The point is not that agents
-wrote a memo. The point is that every agent behind the memo is auditable.
+judge inspect the run: peer IDs, output hashes, verifier status, REE receipt
+metadata, Gensyn Testnet contribution txs, and source quality. The point is not
+that agents wrote a memo. The point is that the evidence boundary is visible.
 ```
 
 Remove from the judge-visible flow:
@@ -49,7 +49,7 @@ Remove from the judge-visible flow:
 - long terminal setup
 - raw JSON unless asked
 - random mesh animation metrics as proof
-- native test payout discussion unless the judge asks about incentives
+- historical or isolated payout helpers presented as current runtime evidence
 - offline fixture evidence unless it is clearly labelled as non-live
 
 ## Historical Recording Notes (`present_only`)
@@ -267,8 +267,9 @@ The script uses:
 - MCP router and three specialist services.
 - Coordinator app on `http://127.0.0.1:8004`.
 - Gensyn REE for the risk specialist path.
-- Gensyn Testnet task/contribution/reputation receipts.
-- Tiny capped native test-ETH payouts of `1000000000 wei` per role by default.
+- Gensyn Testnet task and contribution receipts.
+- No runtime reputation or payout transaction: normal AXL dispatch returns
+  unsigned `SpecialistResponse` objects, and the script disables those writers.
 - One-shot chain indexer after the run completes.
 
 Artifacts are written under:
@@ -332,5 +333,6 @@ For a newly executed and retained run, capture these screenshots in order:
 - REE should be described as present only when a real receipt exists for the
   run being shown.
 - Gensyn Testnet receipt claims require real tx hashes or explorer links.
-- Native test-ETH payouts are tiny, capped, opt-in testnet evidence; do not
-  describe them as stablecoin or real-money rewards.
+- No current native test-ETH payout or reputation-transaction evidence is
+  claimed. The isolated helpers and historical notes do not prove execution by
+  the normal unsigned coordinator path.

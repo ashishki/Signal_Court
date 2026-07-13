@@ -22,10 +22,10 @@ proof layers:
 - REE receipt path: whether the risk inference path has reproducible evidence.
 - Deterministic chain analyst: an optional specialist backed by pinned chain
   events instead of an LLM sample.
-- Reputation-weighted payout ledger: how accepted verifier scores affect
-  capped testnet payout evidence.
-- Gensyn Testnet receipts: whether task, contribution, and reputation events
-  were anchored outside the app.
+- Offline reputation/payout simulation: how a deterministic policy would map
+  verifier scores to capped testnet amounts; this is not a runtime transfer.
+- Gensyn Testnet receipts: whether task and contribution events were anchored
+  outside the app when chain writing was configured.
 
 Signal Count is not a trading bot. A user submits one market thesis, an asset,
 and a time horizon. A coordinator dispatches structured analysis requests to
@@ -33,9 +33,9 @@ specialist services through AXL, collects their responses, and produces an
 auditable risk memo with scenarios, catalysts, risks, invalidation triggers,
 and provenance.
 
-Each completed run exposes the AXL peer, wallet, output hash, verifier
-attestation, REE evidence when enabled, and Gensyn Testnet receipts when
-configured.
+Each completed run exposes its AXL peer, output hash, verifier attestation, REE
+evidence when enabled, and Gensyn Testnet receipts when configured. Wallet
+credit is shown only for a cryptographically verified signed execution.
 
 The product claim is simple: a polished memo is not enough. The useful artifact
 is the proof trail behind the memo.
@@ -49,10 +49,11 @@ is the proof trail behind the memo.
 - Scores specialist outputs through a verifier and records deterministic
   attestation hashes.
 - Detects tampered signed execution envelopes for proof-console evidence.
-- Can generate reputation-weighted native test payout ledgers.
+- Can generate deterministic offline reputation/payout simulation ledgers;
+  these artifacts do not execute a transfer.
 - Can attach a real Gensyn REE receipt to the risk specialist path.
-- Can record task, contribution, and reputation receipt metadata on Gensyn
-  Testnet when chain writing is configured.
+- Can record task and contribution receipt metadata on Gensyn Testnet when
+  chain writing is configured.
 - Produces a structured memo instead of a generic chat response.
 - Renders an operator proof console with AXL peer, wallet, output hash, REE
   status, explorer links, indexed chain facts, and a source-linked memo.
@@ -114,7 +115,7 @@ Signed envelope checks (optional)
   |
 Verifier
   |
-Reputation payout ledger
+Local reputation projection
   |
 Memo synthesis + provenance ledger
 ```
@@ -134,10 +135,10 @@ flowchart LR
     N --> G
     G --> I[Risk memo]
     G --> J[Hashes and attestations]
-    G --> P[Reputation payout ledger]
+    G --> P[Local reputation projection]
     J --> K[Gensyn Testnet receipts]
-    P --> K
     K --> L[Local chain indexer]
+    G -. offline helper only .-> Q[Payout policy simulation]
     T[Signed envelope tamper checks] -. evidence artifact .-> M
     I --> M[Proof console]
     L --> M
@@ -380,7 +381,7 @@ identities without claiming a remote multi-machine deployment.
 
 ### Full Battle Demo Script
 
-For the complete proof path, use the full battle runner:
+For the live transport path, use the full battle runner:
 
 ```bash
 scripts/run_full_battle_demo.sh
@@ -388,8 +389,11 @@ scripts/run_full_battle_demo.sh
 
 It starts the local two-node AXL mesh, MCP router, three specialist services,
 the coordinator app, REE-backed risk execution, Gensyn Testnet receipt writes,
-tiny capped native test-ETH payouts, a one-shot chain indexer, and the web
-viewer. Terminal output is formatted into clear demo sections while
+one-shot chain indexing, and the web viewer. The current AXL specialist
+transport returns unsigned `SpecialistResponse` objects. Consequently, normal
+runs are not credit-eligible and cannot produce a reputation transaction or
+native test-ETH payout; the script explicitly disables both paths and fails if
+either appears. Terminal output is formatted into clear demo sections while
 `.runtime/full-battle/summary.txt` remains plain text for evidence sharing.
 
 Default viewer URL:
@@ -404,24 +408,15 @@ Stop the demo processes with:
 scripts/stop_full_battle_demo.sh
 ```
 
-Historical operator notes from the May 2, 2026 full-battle recording reported:
+Historical operator notes from a May 2, 2026 full-battle recording mentioned a
+job, runtime counts, REE output, and reputation/payout receipts. The ignored raw
+runtime directory is absent from a clean checkout, so none of those details is
+reproducible evidence here. In particular, they do not establish that the
+current unsigned coordinator path executed a reputation transaction or payout.
 
-- Job ID: `3beec5c8-3a95-4058-8962-9408fb951465`.
-- Runtime: `773s` end to end.
-- Live job completed at `+760s`; the remaining time was one-shot indexing and
-  evidence summary generation.
-- Roles completed: `regime`, `narrative`, `risk`.
-- REE receipt status: `validated`.
-- Chain receipts: task, three contributions, and three reputation/test payout
-  receipts.
-- Native test payout size: `1000000000 wei` per role.
-- Indexed projection after replay: `tasks=9`, `contributions=23`,
-  `verifications=0`, `reputation=23`.
-
-The corresponding ignored `.runtime/full-battle` bundle is not present in a
-clean public checkout, so these notes are `present_only`: the tracked public
-fixture does not reproduce or upgrade them into release evidence. Do not cite
-the historical counts as current network, user, production, or security proof.
+Treat those older notes as `present_only`; the tracked public fixture does not
+reproduce or upgrade them into release evidence. Do not cite them as current
+network, user, production, economic, or security proof.
 
 ## Proof Console UI
 
@@ -449,11 +444,14 @@ AXL dispatch evidence
   -> specialist output hash
   -> optional deterministic chain analyst snapshot
   -> verifier attestation and score
-  -> reputation-weighted payout ledger
+  -> zero wallet credit for an unsigned normal-runtime response
   -> optional REE receipt hash/status
-  -> optional Gensyn Testnet receipt/reputation tx
+  -> optional Gensyn Testnet task/contribution receipt tx
   -> indexed chain-event projection
 ```
+
+Offline only: verifier-score scenarios can be passed through the payout policy
+simulation. That helper does not execute or prove a transaction.
 
 What the tracked public fixture verifies locally:
 
@@ -466,18 +464,22 @@ What the tracked public fixture verifies locally:
 - The synthetic risk receipt binds prompt, canonical parameters, and text output
   to supported component hashes and recomputes the master commitment;
   `validated` means only those local consistency checks.
-- Historical deployment transaction references remain bound to the checksum of
-  `docs/gensyn-contracts.md`; the fixture does not query RPC or confirm them.
+- Each historical contract/address/deployment-transaction/explorer tuple must
+  match one exact structured row in `docs/gensyn-contracts.md`; the fixture does
+  not query RPC or confirm it.
 
-The broader live AXL, REE, testnet-write, payout, and indexer paths remain in the
+The broader live AXL, REE, testnet-write, and indexer paths remain in the
 codebase and tests, but they are outside this credential-free evidence claim.
+Reputation transaction and payout helpers also remain covered as isolated
+components; they are unavailable from the normal unsigned coordinator path.
 
 What is not claimed:
 
 - No remote multi-machine AXL deployment unless the mesh scripts are run on
   separate hosts.
 - No ERC20, USDC, stablecoin, or real-money reward flow.
-- Native test-ETH payout evidence is opt-in, capped, tiny, and only for testnet.
+- No current native test-ETH payout or reputation-transaction evidence is
+  claimed; normal runtime responses are unsigned and receive zero wallet credit.
 - No full archival chain reorg rollback beyond the configured repair window.
 - Market/news inputs in the demo are fixture-labelled, not live market data.
 - Signal Count is decision support, not trading advice or price prediction.

@@ -75,9 +75,12 @@ receipt exists, and which transaction backs the claim.
 
 `scripts/run_full_battle_demo.sh` is the one-command presentation path. It
 starts the local two-node AXL mesh, MCP router, specialist services, coordinator
-app, REE-enabled risk path, Gensyn Testnet receipt writes, capped native
-test-ETH payouts, and one-shot indexer. It prints sectioned terminal logs for
-video capture and writes a plain summary to `.runtime/full-battle/summary.txt`.
+app, REE-enabled risk path, Gensyn Testnet task/contribution receipt writes, and
+one-shot indexer. Normal AXL dispatch currently returns unsigned
+`SpecialistResponse` objects, so the script disables reputation transactions
+and native test-ETH payouts and treats either one as an error. It prints
+sectioned terminal logs for video capture and writes a plain summary to
+`.runtime/full-battle/summary.txt`.
 
 The web viewer remains available at `http://127.0.0.1:8004` after the run so
 the proof console can be captured from the completed job state.
@@ -88,7 +91,7 @@ the proof console can be captured from the completed job state.
 | --- | --- | --- |
 | API | `app/api/` | Health, job submission, demo page routes, proof-console evidence display |
 | AXL client | `app/axl/` | Local bridge calls, peer/service addressing, topology fetch |
-| Chain integration | `app/chain/` | Gensyn Testnet transaction builders, receipt/reputation metadata, and capped native test payouts |
+| Chain integration | `app/chain/` | Gensyn Testnet task/contribution runtime writes plus isolated reputation/payout transaction helpers |
 | Coordinator | `app/coordinator/` | Fetch context, fan out specialist calls, collect responses |
 | Evaluation | `app/evaluation/` | Verifier scoring, attestation hashing, wallet attribution, and reputation projection |
 | Event indexer | `app/indexer/` | Gensyn Testnet event decoding and local indexed-chain projections |

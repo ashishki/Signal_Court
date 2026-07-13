@@ -79,7 +79,6 @@ def test_full_battle_preflight_documents_required_checks() -> None:
     for expected in (
         "check_command curl",
         "check_command docker",
-        "check_command forge",
         "check_command git",
         "check_command openssl",
         "check_file_executable",
@@ -91,6 +90,24 @@ def test_full_battle_preflight_documents_required_checks() -> None:
         "check_port_free",
     ):
         assert expected in content
+
+
+def test_full_battle_disables_unsigned_reputation_and_payout_claims() -> None:
+    content = FULL_BATTLE_SCRIPT.read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert (
+        'export SIGNAL_REPUTATION_VAULT_ADDRESS="0x0000000000000000000000000000000000000000"'
+        in content
+    )
+    assert "export SIGNAL_COUNT_NATIVE_TEST_PAYOUTS=0" in content
+    assert "unsigned SpecialistResponse transport" in content
+    assert "Unexpected reputation receipt" in content
+    assert "export SIGNAL_COUNT_NATIVE_TEST_PAYOUTS=1" not in content
+    assert "DeployReputationVault" not in content
+    assert "normal unsigned coordinator path" in readme
+    assert "Offline only: verifier-score scenarios" in readme
+    assert "No current native test-ETH payout" in readme
 
 
 def test_positioning_copy_uses_verification_language() -> None:
