@@ -12,7 +12,8 @@ def test_ci_workflow_targets_python_app_and_tests() -> None:
     content = CI_PATH.read_text(encoding="utf-8")
 
     assert 'python-version: "3.11"' in content
-    assert "pip install -r requirements-dev.txt -e ." in content
+    assert "pip install -r requirements-lock.txt -e ." in content
+    assert "python -m pip check" in content
     assert "ruff check app/ tests/" in content
     assert "ruff format --check app/ tests/" in content
     assert "python -m pytest tests/ -q --tb=short" in content
@@ -25,6 +26,16 @@ def test_ci_workflow_uses_placeholder_env_values() -> None:
     assert 'LLM_API_KEY: "test-key"' in content
     assert "${{ secrets." in content
     assert "sk-" not in content
+
+
+def test_ci_workflow_has_read_only_permissions_and_bounded_runtime() -> None:
+    content = CI_PATH.read_text(encoding="utf-8")
+
+    assert "permissions:\n  contents: read" in content
+    assert "runs-on: ubuntu-24.04" in content
+    assert "timeout-minutes: 15" in content
+    assert "actions/checkout@v5" in content
+    assert "actions/setup-python@v6" in content
 
 
 def test_full_battle_script_has_valid_shebang_and_preflight_mode() -> None:

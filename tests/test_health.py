@@ -7,7 +7,6 @@ from urllib.request import urlopen
 
 import uvicorn
 import pytest
-from fastapi.routing import APIRoute
 
 from app.api.health import health
 from app.main import app
@@ -68,11 +67,5 @@ def test_health_endpoint_does_not_require_external_services(monkeypatch) -> None
     monkeypatch.delenv("MARKET_DATA_API_KEY", raising=False)
     monkeypatch.delenv("NEWS_API_KEY", raising=False)
 
-    health_route = next(
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute) and route.path == "/health"
-    )
-
-    assert "GET" in health_route.methods
+    assert "get" in app.openapi()["paths"]["/health"]
     assert health() == {"status": "ok"}
