@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 from eth_account import Account
@@ -22,10 +24,17 @@ from app.tamper.detector import detect_tampering
 
 DEMO_VICTIM_KEY = "0x1111111111111111111111111111111111111111111111111111111111111111"
 DEMO_ATTACKER_KEY = "0x2222222222222222222222222222222222222222222222222222222222222222"
+SYNTHETIC_RECEIPT = (
+    Path(__file__).resolve().parents[1]
+    / "ree"
+    / "fixtures"
+    / "synthetic_public_receipt.json"
+)
 
 
 def build_honest_execution() -> SignedAgentExecution:
     victim_address = Account.from_key(DEMO_VICTIM_KEY).address
+    receipt_body = json.loads(SYNTHETIC_RECEIPT.read_text(encoding="utf-8"))
     task = TaskSpec(
         job_id="demo-job-tamper-001",
         thesis="ETH continues to lead L2 settlement volume into the next quarter.",
@@ -53,18 +62,12 @@ def build_honest_execution() -> SignedAgentExecution:
         citations=[],
         timestamp="2026-05-03T00:00:00Z",
         agent_wallet=victim_address,
-        ree_receipt_hash=(
-            "0xfeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedface"
-        ),
+        ree_receipt_hash=receipt_body["receipt_hash"],
         receipt_status="validated",
-        ree_prompt_hash=(
-            "0xaaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111"
-        ),
-        ree_tokens_hash=(
-            "0xbbbb2222bbbb2222bbbb2222bbbb2222bbbb2222bbbb2222bbbb2222bbbb2222"
-        ),
-        ree_model_name="demo-ree-model",
-        ree_receipt_body={"demo": True, "rounds": 1},
+        ree_prompt_hash=receipt_body["prompt_hash"],
+        ree_tokens_hash=receipt_body["tokens_hash"],
+        ree_model_name=receipt_body["model_name"],
+        ree_receipt_body=receipt_body,
         ree_receipt_path=None,
     )
     identity = AgentIdentity(

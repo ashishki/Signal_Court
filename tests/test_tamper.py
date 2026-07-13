@@ -1,5 +1,6 @@
 from eth_account import Account
 
+from app.ree.claims import check_receipt_claim
 from app.tamper.adversarial import (
     ATTACKS,
     field_tamper_after_sign,
@@ -17,10 +18,12 @@ from app.tamper.harness import (
 
 
 def test_honest_execution_is_clean() -> None:
-    result = detect_tampering(build_honest_execution())
+    execution = build_honest_execution()
+    result = detect_tampering(execution)
 
     assert result.status == "clean"
     assert result.failed_check_names == []
+    assert check_receipt_claim(execution.response).valid is True
 
 
 def test_tamper_attacks_are_caught() -> None:

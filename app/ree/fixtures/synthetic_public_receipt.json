@@ -1,0 +1,21 @@
+{
+  "model_name": "fixture/signal-count-ree",
+  "commit_hash": "sha256:eafbe608f6649aa25e70383ab0dccc1cf923f0dcc9bc8429cb85b815de79b62f",
+  "config_hash": "sha256:37520f8bc56f8f41e2d0b4dc78b556365d00de33355ca59ff38ecedd3de8cbc3",
+  "prompt": "Synthetic fixture: identify a counter-thesis and invalidation trigger.",
+  "prompt_hash": "sha256:9946521aa9c732013ff7762b2dc64336dce32c7eb9cdbc6762063cdef5ceb917",
+  "parameters": {
+    "max_new_tokens": 64,
+    "temperature": 0
+  },
+  "parameters_hash": "sha256:6da9ba600f8cec4b0003aa7863e8f506c090a0e1c82e90572d5921889cc15fbf",
+  "tokens_hash": "sha256:017f29da85b503e776a765bf7bbda2bc48b203b3fd5db02e88593d758de6a5eb",
+  "token_count": 0,
+  "finish_reason": "fixture",
+  "text_output": "Synthetic fixture output; no model inference was performed.",
+  "device_type": "fixture",
+  "device_name": "not-executed",
+  "receipt_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+  "version": "fixture-v1",
+  "ree_version": "not-a-live-ree-run"
+}

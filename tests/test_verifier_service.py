@@ -1,6 +1,10 @@
+import json
+from pathlib import Path
+
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
+from app.evaluation.attestations import verify_verification_attestation
 from app.identity.canonical import canonical_json_bytes
 from app.identity.signing import sign_agent_execution
 from app.nodes.verifier.service import VerifierService
@@ -14,6 +18,13 @@ from app.schemas.contracts import (
 
 TEST_PRIVATE_KEY = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 TEST_WALLET = "0xFCAd0B19bB29D4674531d6f115237E16AfCE377c"
+SYNTHETIC_RECEIPT = (
+    Path(__file__).resolve().parents[1]
+    / "app"
+    / "ree"
+    / "fixtures"
+    / "synthetic_public_receipt.json"
+)
 
 
 def test_verifier_scores_valid_execution() -> None:
@@ -94,6 +105,7 @@ def test_verifier_signs_attestation_when_key_is_configured() -> None:
         Account.recover_message(message, signature=attestation.verifier_signature)
         == TEST_WALLET
     )
+    assert verify_verification_attestation(attestation) is True
 
 
 def test_verifier_applies_ree_policy() -> None:
@@ -111,6 +123,27 @@ def test_verifier_applies_ree_policy() -> None:
     assert "required_ree_missing:risk-only-ree" in attestation.reasons
 
 
+def test_verifier_rejects_unsubstantiated_validated_receipt() -> None:
+    response = _response().model_copy(update={"ree_receipt_body": {"not": "a receipt"}})
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert "invalid_receipt_claim:receipt_body_invalid" in attestation.reasons
+
+
+def test_verifier_rejects_verified_status_without_reexecution_evidence() -> None:
+    response = _response().model_copy(update={"receipt_status": "verified"})
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert (
+        "invalid_receipt_claim:external_reexecution_evidence_missing"
+        in attestation.reasons
+    )
+
+
 def _task() -> TaskSpec:
     return TaskSpec(
         job_id="job-verifier-1",
@@ -121,6 +154,7 @@ def _task() -> TaskSpec:
 
 
 def _response() -> SpecialistResponse:
+    receipt = json.loads(SYNTHETIC_RECEIPT.read_text(encoding="utf-8"))
     return SpecialistResponse(
         job_id="job-verifier-1",
         node_role="risk",
@@ -135,8 +169,7 @@ def _response() -> SpecialistResponse:
         confidence=0.72,
         citations=["risk-note-1"],
         timestamp="2026-04-27T10:00:00Z",
-        ree_receipt_hash=(
-            "sha256:36ae72fccc5e179a6986d0af614546170ed60be0d0ab953e05978a10c7a9dcb3"
-        ),
+        ree_receipt_hash=receipt["receipt_hash"],
         receipt_status="validated",
+        ree_receipt_body=receipt,
     )

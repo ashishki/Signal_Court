@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from eth_account import Account
-from eth_account.messages import encode_defunct
 
-from app.evaluation.attestations import verification_attestation_hash
+from app.evaluation.attestations import (
+    verification_attestation_hash,
+    verification_attestation_message,
+)
 from app.evaluation.scoring import score_specialist_response
-from app.identity.canonical import canonical_json_bytes
 from app.identity.hashing import canonical_json_hash
 from app.identity.signing import verify_signed_execution
+from app.ree.claims import check_receipt_claim
 from app.schemas.contracts import (
     SignedAgentExecution,
     SpecialistResponse,
@@ -85,6 +87,12 @@ class VerifierService:
         breakdown = score_specialist_response(response, task)
         score = breakdown.total
         reasons = _score_reasons(response=response, score=score)
+        receipt_check = check_receipt_claim(response)
+        if not receipt_check.valid:
+            score = min(score, self._acceptance_threshold - 0.01)
+            reasons.extend(
+                f"invalid_receipt_claim:{reason}" for reason in receipt_check.reasons
+            )
         if self._missing_required_ree(response):
             score = min(score, self._acceptance_threshold - 0.01)
             reasons.append(f"required_ree_missing:{self._ree_policy}")
@@ -140,14 +148,7 @@ class VerifierService:
 
         attestation_hash = verification_attestation_hash(attestation)
         signer = Account.from_key(self._verifier_private_key).address
-        message = encode_defunct(
-            primitive=canonical_json_bytes(
-                {
-                    "domain": "signal-count.verifier-attestation",
-                    "attestation_hash": attestation_hash,
-                }
-            )
-        )
+        message = verification_attestation_message(attestation_hash)
         signed = Account.sign_message(message, private_key=self._verifier_private_key)
         return attestation.model_copy(
             update={
