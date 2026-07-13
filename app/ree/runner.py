@@ -20,9 +20,10 @@ The default is 'ree.sh' which works if the repo is on PATH or in the CWD.
 Docker + CUDA driver are required for the real SDK. In test/CI environments,
 substitute a fake runner via the runner= constructor argument.
 
-Hash algorithm note: receipt validation mirrors Gensyn REE v0.2.0's SHA-256
-commitment over pipe-delimited component hashes. If a future REE version
-changes the algorithm, receipt_status falls back to "parsed".
+Hash algorithm note: receipt validation checks supported SHA-256/Keccak content
+hashes and mirrors Gensyn REE v0.2.0's SHA-256 commitment over pipe-delimited
+component hashes. If a future REE version changes an algorithm,
+receipt_status falls back to "parsed".
 """
 
 from __future__ import annotations

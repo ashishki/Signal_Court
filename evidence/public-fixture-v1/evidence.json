@@ -2,7 +2,8 @@
   "claim_boundaries": [
     "All thesis, topology, responses, identities, and keys are public synthetic fixtures.",
     "Routing selection used the real capability registry; no AXL dispatch or live network call ran.",
-    "The REE-shaped receipt is synthetic; validated means local hash consistency only, not model inference or external re-execution.",
+    "The REE-shaped receipt is synthetic; validated binds its prompt, parameters, and text output to component hashes and the component hashes to the master commitment, but is not model inference or external re-execution.",
+    "Commit/config source bytes and non-content receipt metadata are not locally reconstructed; the signed fixture envelope binds the serialized response, not a real REE identity.",
     "No testnet transaction was submitted or queried; deployment transactions are historical documentation references only.",
     "This artifact is not evidence of users, production operation, trading performance, economic security, or protocol security."
   ],
@@ -44,28 +45,40 @@
     {
       "declared_hash": "",
       "embedded_hash": "",
+      "parameters_hash_matches": null,
+      "prompt_hash_matches": null,
       "reasons": [],
+      "receipt_hash_matches": null,
       "recomputed_hash": "",
       "role": "regime",
       "status": "not_claimed",
+      "tokens_hash_matches": null,
       "valid": true
     },
     {
       "declared_hash": "",
       "embedded_hash": "",
+      "parameters_hash_matches": null,
+      "prompt_hash_matches": null,
       "reasons": [],
+      "receipt_hash_matches": null,
       "recomputed_hash": "",
       "role": "narrative",
       "status": "not_claimed",
+      "tokens_hash_matches": null,
       "valid": true
     },
     {
       "declared_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
       "embedded_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+      "parameters_hash_matches": true,
+      "prompt_hash_matches": true,
       "reasons": [],
+      "receipt_hash_matches": true,
       "recomputed_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
       "role": "risk",
       "status": "validated",
+      "tokens_hash_matches": true,
       "valid": true
     }
   ],

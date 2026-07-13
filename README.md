@@ -208,7 +208,7 @@ python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 Expected evidence content address:
 
 ```text
-sha256:34f1f3f433074e899a734db2a4c8a233eb50ad045a4130902fbd0b6cce1011c7
+sha256:14e6b45b0ed10634ef97d0c5597a7ce8341248541e7bd29bdbd40eed1ff12b64
 ```
 
 The command regenerates the artifact in memory and compares every tracked byte
@@ -460,8 +460,9 @@ What the tracked public fixture verifies locally:
   EIP-191 signers, and bind task, role, peer, wallet, and output.
 - Three verifier attestations canonical-hash, carry EIP-191 signatures, and
   recover the fixture verifier wallet.
-- The synthetic risk receipt parses and recomputes under the supported REE hash
-  algorithm; `validated` means only that local consistency check.
+- The synthetic risk receipt binds prompt, canonical parameters, and text output
+  to supported component hashes and recomputes the master commitment;
+  `validated` means only those local consistency checks.
 - Historical deployment transaction references remain bound to the checksum of
   `docs/gensyn-contracts.md`; the fixture does not query RPC or confirm them.
 

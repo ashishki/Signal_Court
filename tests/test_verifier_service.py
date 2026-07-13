@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
@@ -175,7 +176,14 @@ def test_verifier_signs_attestation_when_key_is_configured() -> None:
 
 def test_verifier_applies_ree_policy() -> None:
     response_without_ree = _response().model_copy(
-        update={"ree_receipt_hash": None, "receipt_status": None}
+        update={
+            "ree_receipt_hash": None,
+            "receipt_status": None,
+            "ree_prompt_hash": None,
+            "ree_tokens_hash": None,
+            "ree_model_name": None,
+            "ree_receipt_body": None,
+        }
     )
 
     attestation = VerifierService(
@@ -188,6 +196,45 @@ def test_verifier_applies_ree_policy() -> None:
     assert "required_ree_missing:risk-only-ree" in attestation.reasons
 
 
+def test_required_ree_policy_rejects_hash_without_status_or_body() -> None:
+    response = _response().model_copy(
+        update={
+            "ree_receipt_hash": "attacker-controlled-nonempty",
+            "receipt_status": None,
+            "ree_prompt_hash": None,
+            "ree_tokens_hash": None,
+            "ree_model_name": None,
+            "ree_receipt_body": None,
+        }
+    )
+
+    attestation = VerifierService(
+        ree_policy="risk-only-ree",
+        enforce_ree_policy=True,
+    ).verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert "invalid_receipt_claim:receipt_status_missing" in attestation.reasons
+    assert "required_ree_invalid:risk-only-ree" in attestation.reasons
+
+
+def test_required_ree_policy_rejects_parsed_only_receipt() -> None:
+    response = _response().model_copy(update={"receipt_status": "parsed"})
+
+    attestation = VerifierService(
+        ree_policy="risk-only-ree",
+        enforce_ree_policy=True,
+    ).verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert "required_ree_not_validated:risk-only-ree" in attestation.reasons
+
+
+def test_unknown_enforced_ree_policy_fails_closed() -> None:
+    with pytest.raises(ValueError, match="unsupported REE policy"):
+        VerifierService(ree_policy="unknown-policy", enforce_ree_policy=True)
+
+
 def test_verifier_rejects_unsubstantiated_validated_receipt() -> None:
     response = _response().model_copy(update={"ree_receipt_body": {"not": "a receipt"}})
 
@@ -195,6 +242,63 @@ def test_verifier_rejects_unsubstantiated_validated_receipt() -> None:
 
     assert attestation.status == "rejected"
     assert "invalid_receipt_claim:receipt_body_invalid" in attestation.reasons
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    (
+        (
+            "ree_prompt_hash",
+            "sha256:" + "00" * 32,
+            "receipt_prompt_hash_mismatch",
+        ),
+        (
+            "ree_tokens_hash",
+            "sha256:" + "11" * 32,
+            "receipt_tokens_hash_mismatch",
+        ),
+        ("ree_model_name", "attacker/model", "receipt_model_name_mismatch"),
+    ),
+)
+def test_verifier_rejects_top_level_receipt_metadata_substitution(
+    field: str,
+    value: str,
+    reason: str,
+) -> None:
+    response = _response().model_copy(update={field: value})
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert f"invalid_receipt_claim:{reason}" in attestation.reasons
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    (
+        ("prompt", "attacker-substituted prompt", "prompt_hash_mismatch"),
+        (
+            "parameters",
+            {"max_new_tokens": 999},
+            "parameters_hash_mismatch",
+        ),
+        ("text_output", "attacker-substituted output", "tokens_hash_mismatch"),
+    ),
+)
+def test_verifier_rejects_embedded_receipt_content_substitution(
+    field: str,
+    value: object,
+    reason: str,
+) -> None:
+    response = _response()
+    receipt_body = dict(response.ree_receipt_body or {})
+    receipt_body[field] = value
+    response = response.model_copy(update={"ree_receipt_body": receipt_body})
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert f"invalid_receipt_claim:{reason}" in attestation.reasons
 
 
 def test_verifier_rejects_verified_status_without_reexecution_evidence() -> None:
@@ -248,5 +352,8 @@ def _response() -> SpecialistResponse:
         timestamp="2026-04-27T10:00:00Z",
         ree_receipt_hash=receipt["receipt_hash"],
         receipt_status="validated",
+        ree_prompt_hash=receipt["prompt_hash"],
+        ree_tokens_hash=receipt["tokens_hash"],
+        ree_model_name=receipt["model_name"],
         ree_receipt_body=receipt,
     )

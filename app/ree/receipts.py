@@ -7,11 +7,12 @@ commit_hash, config_hash, prompt_hash, parameters_hash, tokens_hash.
 Gensyn REE v0.2.0 computes receipt_hash as SHA-256 over the pipe-delimited
 component hashes, returned with a "sha256:" prefix.
 
-Local parsing and hash recomputation alone are not the same as REE-side
-verification. receipt_status="validated" means the local hash recomputed
-correctly. receipt_status="verified" is reserved for full re-execution.
-receipt_status="parsed" means the receipt is structurally valid and the
-hash did not recompute under the currently supported SDK algorithm.
+Local parsing and content/hash recomputation are not the same as REE-side
+verification. receipt_status="validated" means the embedded prompt,
+parameters, and text output match their component hashes and the master hash
+recomputed correctly. receipt_status="verified" is reserved for full
+re-execution. receipt_status="parsed" means the receipt is structurally valid
+but one or more hashes did not recompute under a supported SDK algorithm.
 """
 
 from __future__ import annotations

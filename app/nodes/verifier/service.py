@@ -31,6 +31,8 @@ class VerifierService:
         ree_policy: str = "risk-only-ree",
         enforce_ree_policy: bool = False,
     ) -> None:
+        if enforce_ree_policy:
+            _required_ree_roles(ree_policy)
         self._acceptance_threshold = acceptance_threshold
         self._verifier_private_key = verifier_private_key
         self._ree_policy = ree_policy
@@ -104,9 +106,14 @@ class VerifierService:
                 f"invalid_receipt_claim:{reason}" for reason in receipt_check.reasons
             )
             reasons.append(f"receipt_claim_gate={score:.4f}")
-        if self._missing_required_ree(response):
+        required_ree_failure = self._required_ree_failure(
+            response=response,
+            receipt_status=receipt_check.status,
+            receipt_valid=receipt_check.valid,
+        )
+        if required_ree_failure is not None:
             score = min(score, self._acceptance_threshold - 0.01)
-            reasons.append(f"required_ree_missing:{self._ree_policy}")
+            reasons.append(f"{required_ree_failure}:{self._ree_policy}")
         status = "accepted" if score >= self._acceptance_threshold else "rejected"
         if status == "rejected":
             reasons.append("score_below_threshold")
@@ -142,13 +149,25 @@ class VerifierService:
             self.verify_response(task=task, response=response) for response in responses
         ]
 
-    def _missing_required_ree(self, response: SpecialistResponse) -> bool:
+    def _required_ree_failure(
+        self,
+        *,
+        response: SpecialistResponse,
+        receipt_status: str,
+        receipt_valid: bool,
+    ) -> str | None:
         if not self._enforce_ree_policy:
-            return False
+            return None
         required_roles = _required_ree_roles(self._ree_policy)
         if response.node_role not in required_roles:
-            return False
-        return not response.ree_receipt_hash
+            return None
+        if not receipt_valid:
+            return "required_ree_invalid"
+        if receipt_status == "not_claimed":
+            return "required_ree_missing"
+        if receipt_status != "validated":
+            return "required_ree_not_validated"
+        return None
 
     def _sign_if_configured(
         self,
@@ -188,4 +207,4 @@ def _required_ree_roles(ree_policy: str) -> set[str]:
         return {"risk"}
     if normalized == "all-llm-ree":
         return {"narrative", "risk"}
-    return set()
+    raise ValueError(f"unsupported REE policy: {ree_policy}")

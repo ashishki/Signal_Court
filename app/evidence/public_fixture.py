@@ -178,7 +178,8 @@ def build_public_evidence() -> dict[str, Any]:
         "claim_boundaries": [
             "All thesis, topology, responses, identities, and keys are public synthetic fixtures.",
             "Routing selection used the real capability registry; no AXL dispatch or live network call ran.",
-            "The REE-shaped receipt is synthetic; validated means local hash consistency only, not model inference or external re-execution.",
+            "The REE-shaped receipt is synthetic; validated binds its prompt, parameters, and text output to component hashes and the component hashes to the master commitment, but is not model inference or external re-execution.",
+            "Commit/config source bytes and non-content receipt metadata are not locally reconstructed; the signed fixture envelope binds the serialized response, not a real REE identity.",
             "No testnet transaction was submitted or queried; deployment transactions are historical documentation references only.",
             "This artifact is not evidence of users, production operation, trading performance, economic security, or protocol security.",
         ],
