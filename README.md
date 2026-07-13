@@ -187,11 +187,13 @@ tests/              Unit and integration tests
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt -e .
+python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt
+python -m pip install --no-deps --no-build-isolation -e .
 ```
 
-For the exact dependency set used by CI and the tracked evidence bundle, use
-`requirements-lock.txt` instead of `requirements-dev.txt`.
+`requirements-dev.txt` is the human-maintained lock input. The generated
+`requirements-lock.txt` is the installation source: every Python distribution
+is version- and SHA-256-pinned, including pip and the build toolchain.
 
 ## Five-minute Public Evidence Path
 
@@ -200,7 +202,8 @@ From a clean checkout:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-lock.txt -e .
+python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt
+python -m pip install --no-deps --no-build-isolation -e .
 python -m pip check
 python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 ```
@@ -208,15 +211,16 @@ python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 Expected evidence content address:
 
 ```text
-sha256:14e6b45b0ed10634ef97d0c5597a7ce8341248541e7bd29bdbd40eed1ff12b64
+sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e
 ```
 
-The command regenerates the artifact in memory and compares every tracked byte
-plus source checksums. It uses the production capability-selection, signing,
-receipt-check, and verifier-attestation code paths. It performs no AXL
-dispatch, model inference, RPC lookup, or testnet write and requires no
-credentials. All task data, responses, identities, and signing keys are public
-synthetic fixtures.
+The command regenerates the artifact in memory and compares the exact bundle
+file set, every tracked byte, and source checksums. It directly composes the
+repository's capability-selection, signing, receipt-check, and
+verifier-attestation modules; it is not a replay of the normal coordinator
+transport. It performs no AXL dispatch, model inference, RPC lookup, or testnet
+write and requires no credentials. All task data, responses, identities, and
+signing keys are public synthetic fixtures.
 
 ## Run
 
@@ -304,17 +308,16 @@ topology health and verifier/reputation metadata when available. If the selected
 peer fails, it retries the next candidate and records the fallback chain in
 `Run Evidence`.
 
-### Verified Local AXL Run
+### Historical Local AXL Operator Note
 
-The current implementation has been verified against a locally running Gensyn
-AXL node, MCP router, and three specialist services. The coordinator submitted a
-job through:
+Earlier operator notes report a local Gensyn AXL node, MCP router, and three
+specialist services submitting a coordinator job through:
 
 ```text
 /mcp/{axl_public_key}/{service_name}
 ```
 
-and recorded all three roles as completed with `transport=axl-mcp`:
+and recording all three roles as completed with `transport=axl-mcp`:
 
 ```text
 regime -> regime_analyst
@@ -322,9 +325,9 @@ narrative -> narrative_analyst
 risk -> risk_analyst
 ```
 
-This verifies the local AXL bridge plus MCP router path. It should not be
-overstated as a multi-machine remote mesh unless separate AXL nodes with
-distinct public keys are also running.
+No raw artifact for that run is tracked in the clean repository, and the public
+fixture does not replay it. Treat this section as `present_only` historical
+operator context, not current AXL, remote-mesh, user, or production evidence.
 
 ### Multi-Peer AXL Mesh Demo
 

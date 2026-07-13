@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -12,7 +13,11 @@ def test_ci_workflow_targets_python_app_and_tests() -> None:
     content = CI_PATH.read_text(encoding="utf-8")
 
     assert 'python-version: "3.11"' in content
-    assert "pip install -r requirements-lock.txt -e ." in content
+    assert (
+        "python -m pip install --require-hashes --only-binary=:all: "
+        "-r requirements-lock.txt" in content
+    )
+    assert "python -m pip install --no-deps --no-build-isolation -e ." in content
     assert "python -m pip check" in content
     assert "ruff check app/ tests/ scripts/*.py" in content
     assert "ruff format --check app/ tests/ scripts/*.py" in content
@@ -39,8 +44,22 @@ def test_ci_workflow_has_read_only_permissions_and_bounded_runtime() -> None:
     assert "permissions:\n  contents: read" in content
     assert "runs-on: ubuntu-24.04" in content
     assert "timeout-minutes: 15" in content
-    assert "actions/checkout@v5" in content
-    assert "actions/setup-python@v6" in content
+    assert "actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5" in content
+    assert "persist-credentials: false" in content
+    assert (
+        "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6" in content
+    )
+    assert "actions/checkout@v" not in content
+    assert "actions/setup-python@v" not in content
+    remote_uses = [
+        line.split("#", 1)[0].strip()
+        for line in content.splitlines()
+        if line.strip().startswith("- uses:") and "./" not in line
+    ]
+    assert remote_uses
+    assert all(
+        re.fullmatch(r"- uses: [^@\s]+@[0-9a-f]{40}", line) for line in remote_uses
+    )
 
 
 def test_full_battle_script_has_valid_shebang_and_preflight_mode() -> None:

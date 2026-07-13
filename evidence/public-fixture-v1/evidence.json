@@ -1,7 +1,7 @@
 {
   "claim_boundaries": [
     "All thesis, topology, responses, identities, and keys are public synthetic fixtures.",
-    "Routing selection used the real capability registry; no AXL dispatch or live network call ran.",
+    "Routing selection used the repository application capability registry; no AXL dispatch or live network call ran.",
     "The REE-shaped receipt is synthetic; validated binds its prompt, parameters, and text output to component hashes and the component hashes to the master commitment, but is not model inference or external re-execution.",
     "Commit/config source bytes and non-content receipt metadata are not locally reconstructed; the signed fixture envelope binds the serialized response, not a real REE identity.",
     "No testnet transaction was submitted or queried; deployment transactions are historical documentation references only.",
@@ -86,7 +86,11 @@
     "build_command": "python scripts/build_public_evidence.py --out evidence/public-fixture-v1",
     "credentials_required": [],
     "dependency_lock": "requirements-lock.txt",
-    "dependency_lock_sha256": "68832ce1295273daeaa0ca95dc38a462bdaf4eeb6006b9c39d635cd3ea09e94a",
+    "dependency_lock_sha256": "c09006eb70aa1dda889a0744476f92100c8a4f259dd08534ee0c646b709eb3ae",
+    "install_commands": [
+      "python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt",
+      "python -m pip install --no-deps --no-build-isolation -e ."
+    ],
     "verify_command": "python scripts/build_public_evidence.py --verify evidence/public-fixture-v1"
   },
   "routing_selection": [

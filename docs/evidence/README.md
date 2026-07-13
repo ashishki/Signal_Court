@@ -10,15 +10,16 @@ From a clean checkout:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-lock.txt -e .
+python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt
+python -m pip install --no-deps --no-build-isolation -e .
 python -m pip check
 python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 ```
 
 Expected addresses:
 
-- Evidence: `sha256:14e6b45b0ed10634ef97d0c5597a7ce8341248541e7bd29bdbd40eed1ff12b64`
-- Manifest: `sha256:c9b8d34a1612b6019bd08af2c44b6cd736b59e4043342e3563eb6d2f7e7ffce4`
+- Evidence: `sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e`
+- Manifest: `sha256:a33d068bdf5ff1c97c8a7cd948e4bc1d8dec0eef6e4ff1afa45685b1fc4f778b`
 
 `manifest.json` binds the evidence and environment bytes to the fixture, the
 synthetic receipt, the dependency lock, the generator, and the historical
@@ -29,7 +30,7 @@ environment and clearly states that it is provenance, not remote attestation.
 
 | Surface | Tracked evidence | Verified statement | Boundary |
 | --- | --- | --- | --- |
-| Specialist routing | `routing_selection` | The real capability registry selects one topology-up fixture peer for each of three roles and derives an MCP target. | Selection only; no AXL request was sent. |
+| Specialist routing | `routing_selection` | The repository's application capability registry selects one topology-up fixture peer for each of three roles and derives an MCP target. | Selection only; no AXL request was sent. |
 | Specialist signatures | `signed_executions` | Three EIP-191 signatures recover their public fixture wallets and bind canonical task/output hashes, role, and peer. | Synthetic responses and identities; no external specialist ran. |
 | Verifier attestations | `verifier_attestations` | Three accepted verdicts have recomputable attestation hashes and recover the fixture verifier wallet. | Acceptance is deterministic fixture scoring, not correctness of a market thesis. |
 | REE receipt | `receipt_claim_checks` | The synthetic prompt, canonical parameters, and text output match their component hashes; the master commitment matches all declared component hashes. | Commit/config source bytes and non-content metadata are not reconstructed. No model inference or external re-execution; `validated` is not `verified`. |
@@ -53,6 +54,20 @@ No ignored database, `.runtime` output, wallet credential, operator artifact,
 or private data was imported. The older full-battle notes in the README remain
 `present_only` because their ignored runtime pack is absent from a clean public
 checkout.
+
+## Version and Network Prerequisites
+
+The public fixture needs neither Docker nor network access after its hashed
+Python distributions are installed. Local receipt validation supports the
+repository's documented REE v0.2-style master commitment and content hashes
+encoded as `sha256:<digest>` or Ethereum-compatible `0x<keccak256>` values.
+Unknown component algorithms fail closed; a newer
+[Gensyn REE](https://github.com/gensyn-ai/ree) receipt remains `parsed` until its
+schema and algorithms receive an explicit compatibility review.
+
+Historical Gensyn Testnet references use chain ID `685685` and are bound only
+to [`docs/gensyn-contracts.md`](../gensyn-contracts.md). Reproduction performs
+no RPC lookup, receipt confirmation, transaction submission, or balance check.
 
 ## Negative Claims
 

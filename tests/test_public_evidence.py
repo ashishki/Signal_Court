@@ -1,8 +1,12 @@
 import hashlib
 import json
+import tomllib
 from pathlib import Path
 
+import pytest
+
 from app.evidence.public_fixture import (
+    build_environment_record,
     build_public_evidence,
     render_json,
     verify_bundle,
@@ -60,6 +64,40 @@ def test_bundle_writer_and_verifier_detect_drift(tmp_path: Path) -> None:
         raise AssertionError("tampered evidence bundle was accepted")
 
 
+def test_bundle_verifier_rejects_unexpected_files(tmp_path: Path) -> None:
+    output_dir = tmp_path / "bundle"
+    write_bundle(output_dir)
+    (output_dir / "untracked-claim.json").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="file set differs"):
+        verify_bundle(output_dir)
+
+
+def test_bundle_writer_rejects_preexisting_unexpected_files(tmp_path: Path) -> None:
+    output_dir = tmp_path / "bundle"
+    output_dir.mkdir()
+    (output_dir / "untracked-claim.json").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unexpected evidence bundle entries"):
+        write_bundle(output_dir)
+
+
+def test_recorded_build_toolchain_matches_lock_and_build_system() -> None:
+    toolchain = build_environment_record()["canonical_generation_environment"][
+        "build_toolchain"
+    ]
+    lock_text = Path("requirements-lock.txt").read_text(encoding="utf-8")
+    build_requires = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))[
+        "build-system"
+    ]["requires"]
+
+    assert set(toolchain) == {"pip", "setuptools", "wheel"}
+    for package, version in toolchain.items():
+        assert f"{package}=={version} \\" in lock_text
+    assert f"setuptools=={toolchain['setuptools']}" in build_requires
+    assert f"wheel=={toolchain['wheel']}" in build_requires
+
+
 def test_tracked_public_evidence_bundle_reproduces() -> None:
     manifest = verify_bundle(TRACKED_BUNDLE)
     manifest_bytes = (TRACKED_BUNDLE / "manifest.json").read_bytes()
@@ -77,6 +115,10 @@ def test_tracked_public_evidence_bundle_reproduces() -> None:
         "app/nodes/verifier/service.py",
         "app/ree/claims.py",
         "app/ree/validator.py",
+        ".github/workflows/ci.yml",
+        "pyproject.toml",
+        "requirements-dev.txt",
+        "requirements.txt",
     ):
         assert source in manifest["sources"]
 

@@ -1,8 +1,14 @@
 {
   "canonical_generation_environment": {
     "architecture": "x86_64",
+    "build_toolchain": {
+      "pip": "26.1.2",
+      "setuptools": "83.0.0",
+      "wheel": "0.47.0"
+    },
     "dependency_lock": "requirements-lock.txt",
-    "dependency_lock_sha256": "68832ce1295273daeaa0ca95dc38a462bdaf4eeb6006b9c39d635cd3ea09e94a",
+    "dependency_lock_mode": "version-and-sha256",
+    "dependency_lock_sha256": "c09006eb70aa1dda889a0744476f92100c8a4f259dd08534ee0c646b709eb3ae",
     "kernel": "Linux 6.17.0-35-generic",
     "operating_system": "Ubuntu 24.04",
     "python": "CPython 3.12.3"

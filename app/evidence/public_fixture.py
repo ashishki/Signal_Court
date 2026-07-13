@@ -38,7 +38,7 @@ ROLE_SETTING_PREFIX = {
 
 
 def build_public_evidence() -> dict[str, Any]:
-    """Build a deterministic artifact through production signing/verifier paths."""
+    """Build a deterministic artifact from repository application modules."""
 
     fixture = _read_json(FIXTURE_PATH)
     receipt_body = _read_json(REE_RECEIPT_PATH)
@@ -177,13 +177,17 @@ def build_public_evidence() -> dict[str, Any]:
         },
         "claim_boundaries": [
             "All thesis, topology, responses, identities, and keys are public synthetic fixtures.",
-            "Routing selection used the real capability registry; no AXL dispatch or live network call ran.",
+            "Routing selection used the repository application capability registry; no AXL dispatch or live network call ran.",
             "The REE-shaped receipt is synthetic; validated binds its prompt, parameters, and text output to component hashes and the component hashes to the master commitment, but is not model inference or external re-execution.",
             "Commit/config source bytes and non-content receipt metadata are not locally reconstructed; the signed fixture envelope binds the serialized response, not a real REE identity.",
             "No testnet transaction was submitted or queried; deployment transactions are historical documentation references only.",
             "This artifact is not evidence of users, production operation, trading performance, economic security, or protocol security.",
         ],
         "reproduction": {
+            "install_commands": [
+                "python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt",
+                "python -m pip install --no-deps --no-build-isolation -e .",
+            ],
             "build_command": (
                 "python scripts/build_public_evidence.py "
                 "--out evidence/public-fixture-v1"
@@ -211,6 +215,8 @@ def build_environment_record() -> dict[str, Any]:
             "python": "CPython 3.12.3",
             "dependency_lock": "requirements-lock.txt",
             "dependency_lock_sha256": _sha256_file(LOCK_PATH),
+            "dependency_lock_mode": "version-and-sha256",
+            "build_toolchain": _locked_build_toolchain(),
         },
         "runtime_contract": {
             "python": ">=3.11",
@@ -252,6 +258,10 @@ def build_manifest(evidence_bytes: bytes, environment_bytes: bytes) -> dict[str,
         ROOT / "app/ree/receipts.py",
         ROOT / "app/ree/validator.py",
         ROOT / "app/schemas/contracts.py",
+        ROOT / ".github/workflows/ci.yml",
+        ROOT / "pyproject.toml",
+        ROOT / "requirements-dev.txt",
+        ROOT / "requirements.txt",
         ROOT / "scripts/build_public_evidence.py",
     )
     evidence_digest = _sha256_bytes(evidence_bytes)
@@ -284,6 +294,10 @@ def write_bundle(output_dir: Path) -> dict[str, Any]:
     environment_bytes = render_json(build_environment_record())
     manifest = build_manifest(evidence_bytes, environment_bytes)
     output_dir.mkdir(parents=True, exist_ok=True)
+    expected_names = {"evidence.json", "environment.json", "manifest.json"}
+    unexpected = {path.name for path in output_dir.iterdir()} - expected_names
+    if unexpected:
+        raise ValueError(f"unexpected evidence bundle entries: {sorted(unexpected)}")
     (output_dir / "evidence.json").write_bytes(evidence_bytes)
     (output_dir / "environment.json").write_bytes(environment_bytes)
     (output_dir / "manifest.json").write_bytes(render_json(manifest))
@@ -301,6 +315,12 @@ def verify_bundle(output_dir: Path) -> dict[str, Any]:
         "environment.json": environment_bytes,
         "manifest.json": render_json(expected_manifest),
     }
+    actual_entries = {path.name for path in output_dir.iterdir()}
+    if actual_entries != set(expected_files):
+        raise ValueError(
+            "evidence bundle file set differs: "
+            f"expected={sorted(expected_files)}, actual={sorted(actual_entries)}"
+        )
     for name, expected in expected_files.items():
         path = output_dir / name
         if not path.is_file():
@@ -323,6 +343,20 @@ def _settings_for_roles(roles: list[dict[str, Any]]) -> Settings:
             f"{peer_id}|{service_name}" for peer_id in candidates
         )
     return Settings(**values)
+
+
+def _locked_build_toolchain() -> dict[str, str]:
+    """Read canonical build-tool versions from the bound hash lock."""
+
+    lock_lines = LOCK_PATH.read_text(encoding="utf-8").splitlines()
+    versions: dict[str, str] = {}
+    for package in ("pip", "setuptools", "wheel"):
+        prefix = f"{package}=="
+        matches = [line.split()[0] for line in lock_lines if line.startswith(prefix)]
+        if len(matches) != 1:
+            raise ValueError(f"expected exactly one locked {package} requirement")
+        versions[package] = matches[0].removeprefix(prefix)
+    return versions
 
 
 def _build_testnet_references(

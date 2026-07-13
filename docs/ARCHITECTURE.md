@@ -104,8 +104,8 @@ the proof console can be captured from the completed job state.
 
 ## AXL Integration Boundary
 
-The coordinator does not call specialist hosts directly in the production path.
-It resolves a specialist role to a configured AXL peer ID and service name, then
+The configured coordinator path does not call specialist hosts directly. It
+resolves a specialist role to a configured AXL peer ID and service name, then
 builds an MCP route through the local AXL bridge:
 
 ```text
@@ -118,9 +118,9 @@ each specialist took.
 
 Payloads crossing this boundary are transport-safe JSON data only. Runtime
 objects such as Python LLM client instances stay inside the receiving process.
-This matters because the live AXL path serializes requests over HTTP; an
+This matters because the configured AXL path serializes requests over HTTP; an
 in-process object in the payload would work only in a fake local workflow and
-fail through the real bridge.
+fail through the HTTP bridge.
 
 ## Event Indexer
 
@@ -146,7 +146,7 @@ repairs a configured recent window if a stored block hash changes. Replay is
 idempotent. Full archival rollback beyond the configured repair window is not
 claimed.
 
-The single-node live verification proves:
+A freshly captured single-node run can provide evidence for:
 
 - coordinator -> local AXL bridge
 - local AXL bridge -> MCP router
@@ -168,10 +168,10 @@ regime / narrative / risk specialist services
 ```
 
 In that mode, `AXL_LOCAL_BASE_URL` points to Node A while role peer IDs point to
-Node B. The topology snapshot shows both public keys, and dispatch targets use
-Node B's public key. This is a real local AXL peer separation. It should still
-be described as a same-machine mesh unless the nodes are deployed on separate
-machines.
+Node B. A successful run should record both public keys in its topology evidence
+and use Node B's public key in its dispatch targets. That run is evidence of
+same-machine peer separation only when its process logs and topology artifact
+are retained; it is not evidence of a remote deployment.
 
 ## Specialist Node Server
 

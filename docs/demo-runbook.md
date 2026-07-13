@@ -182,11 +182,13 @@ Expected evidence for a successful local AXL run:
 - Each dispatch target uses `/mcp/{axl_public_key}/{service_name}`.
 - `Topology Snapshot` shows the same AXL public key.
 
-Current verified scope:
+Evidence classification for a newly captured run:
 
-- Verified: local Gensyn AXL node -> MCP router -> specialist `/mcp` services.
-- Verified: coordinator creates a full completed job through `axl-mcp`.
-- Not claimed: remote multi-machine AXL mesh with separate public keys.
+- The checks above can establish a local Gensyn AXL node -> MCP router ->
+  specialist `/mcp` path when their raw output is retained.
+- A completed job can establish coordinator dispatch through `axl-mcp` when the
+  job ledger and topology snapshot are retained together.
+- Neither result establishes a remote multi-machine AXL mesh.
 
 If the UI returns a server error after a live run, check the topology shape. The
 live AXL node may return `peers=null`; the UI now handles that shape and falls
@@ -265,9 +267,10 @@ Expected mesh evidence:
 - `Run Evidence` dispatch targets use Node B's public key.
 - `partial=false` and all three roles are `completed`.
 
-This proves a local multi-peer AXL mesh with distinct peer identities. It is
-stronger than the single-node bridge demo, but it is still a local same-machine
-mesh unless run across separate machines.
+When retained with the process logs and topology snapshots, those results
+support a local multi-peer AXL claim with distinct peer identities. They do not
+support a remote or multi-machine claim unless the run actually uses separate
+machines and records that boundary.
 
 ## Full Battle Demo
 
