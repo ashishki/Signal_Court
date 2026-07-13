@@ -55,6 +55,7 @@ def detect_tampering(execution: SignedAgentExecution) -> DetectionResult:
     checks.append(_check_identity_role(execution))
     checks.append(_check_identity_peer_id(execution))
     checks.append(_check_signer_matches_identity(execution))
+    checks.append(_check_response_wallet_matches_identity(execution))
     checks.append(_check_signature_recovers_signer(execution))
     checks.append(_check_receipt_consistency(execution))
     checks.append(_check_signature_algorithm(execution))
@@ -120,6 +121,29 @@ def _check_signer_matches_identity(execution: SignedAgentExecution) -> CheckResu
         detail="envelope.signer must equal identity.wallet",
         expected=wallet,
         observed=signer,
+    )
+
+
+def _check_response_wallet_matches_identity(
+    execution: SignedAgentExecution,
+) -> CheckResult:
+    identity_wallet = to_checksum_address(execution.identity.wallet)
+    response_wallet = execution.response.agent_wallet
+    matches = response_wallet is None or (
+        to_checksum_address(response_wallet) == identity_wallet
+    )
+    return CheckResult(
+        name="response_wallet_matches_identity",
+        passed=matches,
+        detail=(
+            "response.agent_wallet must be absent or equal the signed identity wallet"
+        ),
+        expected=identity_wallet,
+        observed=(
+            to_checksum_address(response_wallet)
+            if response_wallet is not None
+            else "not_declared"
+        ),
     )
 
 

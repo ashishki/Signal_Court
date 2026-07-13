@@ -57,7 +57,7 @@ class VerifierService:
                     score=0.0,
                     reasons=["invalid_signature"],
                     signer=signed_execution.signature.signer,
-                    agent_wallet=signed_execution.identity.wallet,
+                    agent_wallet=None,
                     output_hash=signed_execution.signature.output_hash,
                     ree_receipt_hash=response.ree_receipt_hash,
                     receipt_status=response.receipt_status,
@@ -69,11 +69,11 @@ class VerifierService:
                 )
             )
 
-        return self.verify_response(
+        return self._verify_response(
             task=signed_execution.task,
             response=response,
-            signer=signed_execution.signature.signer,
-            output_hash=signed_execution.signature.output_hash,
+            verified_signer=signed_execution.signature.signer,
+            verified_output_hash=signed_execution.signature.output_hash,
         )
 
     def verify_response(
@@ -81,8 +81,18 @@ class VerifierService:
         *,
         task: TaskSpec,
         response: SpecialistResponse,
-        signer: str | None = None,
-        output_hash: str | None = None,
+    ) -> VerificationAttestation:
+        """Score an unsigned response without attributing it to a wallet."""
+
+        return self._verify_response(task=task, response=response)
+
+    def _verify_response(
+        self,
+        *,
+        task: TaskSpec,
+        response: SpecialistResponse,
+        verified_signer: str | None = None,
+        verified_output_hash: str | None = None,
     ) -> VerificationAttestation:
         breakdown = score_specialist_response(response, task)
         score = breakdown.total
@@ -109,9 +119,9 @@ class VerifierService:
                 status=status,
                 score=score,
                 reasons=reasons,
-                signer=signer,
-                agent_wallet=response.agent_wallet or signer,
-                output_hash=output_hash or canonical_json_hash(response),
+                signer=verified_signer,
+                agent_wallet=verified_signer,
+                output_hash=verified_output_hash or canonical_json_hash(response),
                 ree_receipt_hash=response.ree_receipt_hash,
                 receipt_status=response.receipt_status,
                 ree_prompt_hash=response.ree_prompt_hash,

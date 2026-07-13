@@ -92,7 +92,7 @@ def run_side_by_side() -> dict[str, Any]:
 
     for attack in ATTACKS:
         mutate = ATTACK_FUNCTIONS[attack.name]
-        if attack.name == "signer_swap_in_envelope":
+        if attack.name in {"agent_wallet_substitution", "signer_swap_in_envelope"}:
             tampered = mutate(honest, attacker_address)
         elif attack.name == "forged_signature_with_attacker_key":
             tampered = mutate(honest, DEMO_ATTACKER_KEY)

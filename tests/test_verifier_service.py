@@ -5,12 +5,19 @@ from eth_account import Account
 from eth_account.messages import encode_defunct
 
 from app.evaluation.attestations import verify_verification_attestation
+from app.evaluation.reputation import build_reputation_updates
 from app.identity.canonical import canonical_json_bytes
-from app.identity.signing import sign_agent_execution
+from app.identity.signing import (
+    _signable_message,
+    output_hash,
+    sign_agent_execution,
+    task_hash,
+)
 from app.nodes.verifier.service import VerifierService
 from app.schemas.contracts import (
     AgentIdentity,
     ScenarioView,
+    SignatureEnvelope,
     SignedAgentExecution,
     SpecialistResponse,
     TaskSpec,
@@ -44,9 +51,13 @@ def test_verifier_scores_valid_execution() -> None:
     assert attestation.status == "accepted"
     assert attestation.score > 0
     assert attestation.signer == TEST_WALLET
+    assert attestation.agent_wallet == TEST_WALLET
     assert attestation.output_hash == signed.signature.output_hash
     assert attestation.ree_receipt_hash == signed.response.ree_receipt_hash
     assert "receipt_status=validated" in attestation.reasons
+    update = build_reputation_updates([attestation])[0]
+    assert update.agent_wallet == TEST_WALLET
+    assert update.reputation_points > 0
 
 
 def test_verifier_rejects_invalid_signature() -> None:
@@ -72,6 +83,60 @@ def test_verifier_rejects_invalid_signature() -> None:
     assert attestation.status == "rejected"
     assert attestation.score == 0
     assert attestation.reasons == ["invalid_signature"]
+    assert attestation.agent_wallet is None
+
+
+def test_verifier_rejects_signed_wallet_substitution_without_credit() -> None:
+    attacker_wallet = Account.from_key("0x" + "22" * 32).address
+    task = _task()
+    response = _response().model_copy(update={"agent_wallet": attacker_wallet})
+    identity = AgentIdentity(
+        role="risk",
+        peer_id="peer-risk-1",
+        wallet=TEST_WALLET,
+    )
+    task_digest = task_hash(task)
+    output_digest = output_hash(response)
+    signed_message = Account.sign_message(
+        _signable_message(
+            identity=identity,
+            signer=TEST_WALLET,
+            task_digest=task_digest,
+            output_digest=output_digest,
+        ),
+        private_key=TEST_PRIVATE_KEY,
+    )
+    execution = SignedAgentExecution(
+        task=task,
+        identity=identity,
+        response=response,
+        signature=SignatureEnvelope(
+            signer=TEST_WALLET,
+            task_hash=task_digest,
+            output_hash=output_digest,
+            signature=f"0x{signed_message.signature.hex()}",
+        ),
+    )
+
+    attestation = VerifierService().verify_signed_execution(execution)
+    update = build_reputation_updates([attestation])[0]
+
+    assert attestation.status == "rejected"
+    assert attestation.agent_wallet is None
+    assert update.agent_wallet is None
+    assert update.reputation_points == 0
+
+
+def test_unsigned_response_cannot_claim_wallet_credit() -> None:
+    response = _response().model_copy(update={"agent_wallet": TEST_WALLET})
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+    update = build_reputation_updates([attestation])[0]
+
+    assert attestation.status == "accepted"
+    assert attestation.signer is None
+    assert attestation.agent_wallet is None
+    assert update.agent_wallet is None
 
 
 def test_verifier_signs_attestation_when_key_is_configured() -> None:

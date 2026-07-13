@@ -3,6 +3,7 @@ from eth_account import Account
 from app.ree.claims import check_receipt_claim
 from app.tamper.adversarial import (
     ATTACKS,
+    agent_wallet_substitution,
     field_tamper_after_sign,
     forged_signature_with_attacker_key,
     receipt_status_overclaim,
@@ -39,6 +40,10 @@ def test_tamper_attacks_are_caught() -> None:
         (
             forged_signature_with_attacker_key(honest, DEMO_ATTACKER_KEY),
             {"signature_recovers_signer"},
+        ),
+        (
+            agent_wallet_substitution(honest, attacker),
+            {"output_hash_match", "response_wallet_matches_identity"},
         ),
         (role_substitution(honest), {"identity_role_match"}),
         (receipt_status_overclaim(honest), {"receipt_consistency"}),
