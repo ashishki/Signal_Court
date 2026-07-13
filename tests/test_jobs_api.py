@@ -802,6 +802,9 @@ def test_reputation_endpoint_returns_local_projection(tmp_path: Path) -> None:
                                 job_id=job.job_id,
                                 node_role="regime",
                                 peer_id="peer-regime-test",
+                                signer="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+                                agent_wallet="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+                                output_hash="0x" + "11" * 32,
                                 status="accepted",
                                 score=0.9,
                             )

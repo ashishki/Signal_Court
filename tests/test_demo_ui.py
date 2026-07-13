@@ -608,6 +608,7 @@ async def _configure_completed_job_with_reputation_updates(tmp_path: Path) -> No
             "peer_id": "peer-regime-test",
             "verifier_status": "accepted",
             "verifier_score": 0.84,
+            "credit_eligible": True,
             "reputation_points": 84.0,
             "reason": "verifier_score_credit",
         }

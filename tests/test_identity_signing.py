@@ -93,6 +93,53 @@ def test_signature_binds_task_hash_and_output_hash() -> None:
     assert verify_signed_execution(tampered) is False
 
 
+def test_signer_rejects_task_response_job_id_mismatch() -> None:
+    with pytest.raises(ValueError, match="task job_id"):
+        sign_agent_execution(
+            task=_task(),
+            response=_response().model_copy(update={"job_id": "attacker-job"}),
+            identity=AgentIdentity(
+                role="risk",
+                peer_id="peer-risk-1",
+                wallet=TEST_WALLET,
+            ),
+            private_key=TEST_PRIVATE_KEY,
+        )
+
+
+def test_fully_signed_job_id_substitution_fails_verification() -> None:
+    task = _task()
+    response = _response().model_copy(update={"job_id": "attacker-job"})
+    identity = AgentIdentity(
+        role="risk",
+        peer_id="peer-risk-1",
+        wallet=TEST_WALLET,
+    )
+    task_digest = task_hash(task)
+    output_digest = output_hash(response)
+    message = _signable_message(
+        identity=identity,
+        signer=TEST_WALLET,
+        task_digest=task_digest,
+        output_digest=output_digest,
+    )
+    signature = Account.sign_message(message, private_key=TEST_PRIVATE_KEY)
+    execution = SignedAgentExecution(
+        task=task,
+        identity=identity,
+        response=response,
+        signature=SignatureEnvelope(
+            signer=TEST_WALLET,
+            task_hash=task_digest,
+            output_hash=output_digest,
+            signature=f"0x{signature.signature.hex()}",
+        ),
+    )
+
+    assert recover_execution_signer(execution) == TEST_WALLET
+    assert verify_signed_execution(execution) is False
+
+
 def test_signer_cannot_attribute_execution_to_a_different_response_wallet() -> None:
     attacker_wallet = Account.from_key("0x" + "22" * 32).address
     response = _response().model_copy(update={"agent_wallet": attacker_wallet})

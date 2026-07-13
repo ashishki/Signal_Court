@@ -148,6 +148,27 @@ def test_nested_gensyn_receipt_passes_validation() -> None:
     assert result.expected_receipt_hash == receipt.receipt_hash
 
 
+def test_flat_receipt_rejects_unknown_claim_fields() -> None:
+    body = parse_ree_receipt(FIXTURES / "valid_receipt.json").model_dump(mode="json")
+    body["production"] = True
+
+    with pytest.raises(ValueError, match="Extra inputs are not permitted"):
+        parse_ree_receipt(body)
+
+
+def test_nested_receipt_rejects_unknown_claim_fields() -> None:
+    body = {
+        "model": {"production": True},
+        "input": {},
+        "output": {},
+        "execution": {},
+        "hashes": {},
+    }
+
+    with pytest.raises(ValueError, match="unknown model fields.*production"):
+        parse_ree_receipt(body)
+
+
 @pytest.mark.parametrize(
     ("field", "replacement", "reason"),
     (

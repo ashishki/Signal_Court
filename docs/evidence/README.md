@@ -19,7 +19,7 @@ python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 Expected addresses:
 
 - Evidence: `sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e`
-- Manifest: `sha256:a33d068bdf5ff1c97c8a7cd948e4bc1d8dec0eef6e4ff1afa45685b1fc4f778b`
+- Manifest: `sha256:f6cb59c6ab618f23c4b3cbb4e0c3b44baf45b1b936e6dc4fca4d6b2cfcd19f1a`
 
 `manifest.json` binds the evidence and environment bytes to the fixture, the
 synthetic receipt, the dependency lock, the generator, and the historical

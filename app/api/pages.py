@@ -775,7 +775,8 @@ def _roles_status(provenance_ledger: list[dict[str, object]]) -> str:
     if statuses <= {"completed"}:
         return "completed"
     if any(
-        status in {"failed", "error", "timed_out", "missing"} for status in statuses
+        status in {"failed", "error", "invalid_response", "timed_out", "missing"}
+        for status in statuses
     ):
         return "partial"
     return "recorded"

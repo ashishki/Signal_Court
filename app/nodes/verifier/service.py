@@ -11,7 +11,7 @@ from app.evaluation.attestations import (
 from app.evaluation.scoring import score_specialist_response
 from app.identity.hashing import canonical_json_hash
 from app.identity.signing import verify_signed_execution
-from app.ree.claims import check_receipt_claim
+from app.ree.claims import canonical_validated_receipt_body, check_receipt_claim
 from app.schemas.contracts import (
     SignedAgentExecution,
     SpecialistResponse,
@@ -48,31 +48,29 @@ class VerifierService:
         self,
         signed_execution: SignedAgentExecution,
     ) -> VerificationAttestation:
+        task = signed_execution.task
+        identity = signed_execution.identity
         response = signed_execution.response
         if not verify_signed_execution(signed_execution):
+            context_reasons = _execution_context_failure_reasons(
+                signed_execution=signed_execution
+            )
             return self._sign_if_configured(
                 VerificationAttestation(
-                    job_id=response.job_id,
-                    node_role=response.node_role,
-                    peer_id=response.peer_id,
+                    job_id=task.job_id,
+                    node_role=identity.role,
+                    peer_id=identity.peer_id,
                     status="rejected",
                     score=0.0,
-                    reasons=["invalid_signature"],
+                    reasons=context_reasons or ["invalid_signature"],
                     signer=signed_execution.signature.signer,
                     agent_wallet=None,
                     output_hash=signed_execution.signature.output_hash,
-                    ree_receipt_hash=response.ree_receipt_hash,
-                    receipt_status=response.receipt_status,
-                    ree_prompt_hash=response.ree_prompt_hash,
-                    ree_tokens_hash=response.ree_tokens_hash,
-                    ree_model_name=response.ree_model_name,
-                    ree_receipt_body=response.ree_receipt_body,
-                    ree_receipt_path=response.ree_receipt_path,
                 )
             )
 
         return self._verify_response(
-            task=signed_execution.task,
+            task=task,
             response=response,
             verified_signer=signed_execution.signature.signer,
             verified_output_hash=signed_execution.signature.output_hash,
@@ -96,6 +94,21 @@ class VerifierService:
         verified_signer: str | None = None,
         verified_output_hash: str | None = None,
     ) -> VerificationAttestation:
+        if task.job_id != response.job_id:
+            return self._sign_if_configured(
+                VerificationAttestation(
+                    job_id=task.job_id,
+                    node_role=response.node_role,
+                    peer_id=response.peer_id,
+                    status="rejected",
+                    score=0.0,
+                    reasons=["task_response_job_id_mismatch"],
+                    signer=verified_signer,
+                    agent_wallet=None,
+                    output_hash=verified_output_hash,
+                )
+            )
+
         breakdown = score_specialist_response(response, task)
         score = breakdown.total
         reasons = _score_reasons(response=response, score=score)
@@ -117,6 +130,10 @@ class VerifierService:
         status = "accepted" if score >= self._acceptance_threshold else "rejected"
         if status == "rejected":
             reasons.append("score_below_threshold")
+        canonical_receipt_body = canonical_validated_receipt_body(
+            response,
+            receipt_check=receipt_check,
+        )
 
         return self._sign_if_configured(
             VerificationAttestation(
@@ -134,7 +151,7 @@ class VerifierService:
                 ree_prompt_hash=response.ree_prompt_hash,
                 ree_tokens_hash=response.ree_tokens_hash,
                 ree_model_name=response.ree_model_name,
-                ree_receipt_body=response.ree_receipt_body,
+                ree_receipt_body=canonical_receipt_body,
                 ree_receipt_path=response.ree_receipt_path,
             )
         )
@@ -198,6 +215,23 @@ def _score_reasons(response: SpecialistResponse, score: float) -> list[str]:
         reasons.append("citations_present")
     if response.risks:
         reasons.append("risks_present")
+    return reasons
+
+
+def _execution_context_failure_reasons(
+    *,
+    signed_execution: SignedAgentExecution,
+) -> list[str]:
+    task = signed_execution.task
+    identity = signed_execution.identity
+    response = signed_execution.response
+    reasons: list[str] = []
+    if task.job_id != response.job_id:
+        reasons.append("task_response_job_id_mismatch")
+    if identity.role != response.node_role:
+        reasons.append("identity_response_role_mismatch")
+    if identity.peer_id != response.peer_id:
+        reasons.append("identity_response_peer_id_mismatch")
     return reasons
 
 

@@ -120,6 +120,24 @@ def check_receipt_claim(response: SpecialistResponse) -> ReceiptClaimCheck:
     )
 
 
+def canonical_validated_receipt_body(
+    response: SpecialistResponse,
+    *,
+    receipt_check: ReceiptClaimCheck | None = None,
+) -> dict[str, object] | None:
+    """Return only the strict canonical body behind a valid ``validated`` claim."""
+
+    check = receipt_check or check_receipt_claim(response)
+    if (
+        check.status != "validated"
+        or not check.valid
+        or response.ree_receipt_body is None
+    ):
+        return None
+    receipt = parse_ree_receipt(response.ree_receipt_body)
+    return receipt.model_dump(mode="json")
+
+
 def _has_receipt_material(response: SpecialistResponse) -> bool:
     return any(
         value is not None and value != ""

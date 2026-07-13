@@ -48,6 +48,8 @@ def sign_agent_execution(
 
     if signer.lower() != normalized_identity.wallet.lower():
         raise ValueError("private key does not match agent identity wallet")
+    if task.job_id != response.job_id:
+        raise ValueError("task job_id does not match specialist response")
     if response.node_role != normalized_identity.role:
         raise ValueError("agent identity role does not match specialist response")
     if response.peer_id != normalized_identity.peer_id:
@@ -99,6 +101,8 @@ def verify_signed_execution(signed_execution: SignedAgentExecution) -> bool:
     response = signed_execution.response
 
     if envelope.algorithm != "eip191":
+        return False
+    if signed_execution.task.job_id != response.job_id:
         return False
     if response.node_role != identity.role or response.peer_id != identity.peer_id:
         return False
