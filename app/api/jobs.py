@@ -192,7 +192,11 @@ def _build_job_verification_bundle(
     chain_receipts = _as_dict_list(run_metadata.get("chain_receipts"))
 
     checks = {
-        "output_hashes": _verify_output_hashes(attestations, specialist_responses),
+        "output_hashes": _verify_output_hashes(
+            attestations,
+            specialist_responses,
+            expected_job_id=job_id,
+        ),
         "attestations": _verify_attestations(
             attestations,
             expected_job_id=job_id,
@@ -213,27 +217,76 @@ def _build_job_verification_bundle(
 def _verify_output_hashes(
     attestations: list[dict[str, object]],
     specialist_responses: list[dict[str, object]],
+    *,
+    expected_job_id: str,
 ) -> dict[str, object]:
-    responses_by_role = {
-        str(response.get("node_role", "")): response
-        for response in specialist_responses
-    }
-    items = []
+    attestations_by_context: dict[tuple[str, str, str], list[dict[str, object]]] = {}
+    responses_by_context: dict[tuple[str, str, str], list[dict[str, object]]] = {}
     for attestation in attestations:
-        role = str(attestation.get("node_role", ""))
-        output_hash = str(attestation.get("output_hash", ""))
+        attestations_by_context.setdefault(
+            _verification_context(attestation), []
+        ).append(attestation)
+    for response in specialist_responses:
+        responses_by_context.setdefault(_verification_context(response), []).append(
+            response
+        )
+
+    items: list[dict[str, object]] = []
+    all_contexts = sorted(attestations_by_context.keys() | responses_by_context.keys())
+    for job_id, role, peer_id in all_contexts:
+        matching_attestations = attestations_by_context.get((job_id, role, peer_id), [])
+        matching_responses = responses_by_context.get((job_id, role, peer_id), [])
         item = {
+            "job_id": job_id,
             "role": role,
-            "status": "present" if output_hash else "missing",
-            "output_hash": output_hash,
+            "peer_id": peer_id,
+            "attestation_count": len(matching_attestations),
+            "specialist_response_count": len(matching_responses),
         }
-        response = responses_by_role.get(role)
-        if output_hash and response is not None:
-            recomputed = canonical_json_hash(response)
-            item["recomputed_output_hash"] = recomputed
-            item["status"] = "verified" if recomputed == output_hash else "failed"
+        if len(matching_attestations) == 1:
+            item["output_hash"] = str(matching_attestations[0].get("output_hash", ""))
+        if not job_id or not role or not peer_id:
+            item.update(status="failed", reason="invalid_verification_context")
+        elif job_id != expected_job_id:
+            item.update(status="failed", reason="job_id_mismatch")
+        elif len(matching_attestations) != 1:
+            item.update(
+                status="failed",
+                reason=(
+                    "missing_attestation"
+                    if not matching_attestations
+                    else "duplicate_attestation"
+                ),
+            )
+        elif len(matching_responses) != 1:
+            item.update(
+                status="failed",
+                reason=(
+                    "missing_specialist_response"
+                    if not matching_responses
+                    else "duplicate_specialist_response"
+                ),
+            )
+        else:
+            output_hash = str(item["output_hash"])
+            if not output_hash:
+                item.update(status="missing", reason="missing_output_hash")
+            else:
+                recomputed = canonical_json_hash(matching_responses[0])
+                item["recomputed_output_hash"] = recomputed
+                item["status"] = "verified" if recomputed == output_hash else "failed"
+                if recomputed != output_hash:
+                    item["reason"] = "output_hash_mismatch"
         items.append(item)
     return {"status": _items_status(items), "items": items}
+
+
+def _verification_context(item: dict[str, object]) -> tuple[str, str, str]:
+    return (
+        str(item.get("job_id", "")),
+        str(item.get("node_role", "")),
+        str(item.get("peer_id", "")),
+    )
 
 
 def _verify_attestations(
@@ -263,17 +316,17 @@ def _verify_attestation_signature(
     *,
     expected_job_id: str,
 ) -> str:
-    attestation_hash = attestation.get("attestation_hash")
-    verifier = attestation.get("verifier")
-    signature = attestation.get("verifier_signature")
-    if not attestation_hash and not signature and not verifier:
-        return "present"
     try:
         parsed = VerificationAttestation.model_validate(attestation)
     except Exception:
         return "failed"
     if parsed.job_id != expected_job_id:
         return "failed"
+    attestation_hash = parsed.attestation_hash
+    verifier = parsed.verifier
+    signature = parsed.verifier_signature
+    if not attestation_hash and not signature and not verifier:
+        return "present"
     return "verified" if verify_verification_attestation(parsed) else "failed"
 
 

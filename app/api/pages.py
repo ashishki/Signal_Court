@@ -417,10 +417,13 @@ def _verification_evidence_label(label: str, check: dict[str, object]) -> str:
     if not item_list:
         return "missing"
     if label == "output_hashes":
+        check_status = str(check.get("status", ""))
+        if check_status == "failed":
+            return "stored specialist payload verification failed"
         recomputed_count = sum(
             1 for item in item_list if item.get("recomputed_output_hash")
         )
-        if recomputed_count == len(item_list):
+        if check_status == "verified" and recomputed_count == len(item_list):
             return "verified from stored specialist payload"
         if recomputed_count:
             return "mixed: stored payload and present only"

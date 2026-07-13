@@ -389,10 +389,13 @@ def test_job_verify_endpoint_returns_proof_bundle(tmp_path: Path) -> None:
 
     payload = asyncio.run(_exercise())
 
-    assert payload["status"] == "validated"
+    assert payload["status"] == "failed"
     checks = payload["checks"]
-    assert checks["output_hashes"]["status"] == "present"
+    assert checks["output_hashes"]["status"] == "failed"
     assert checks["output_hashes"]["items"][0]["output_hash"] == "0x" + "11" * 32
+    assert (
+        checks["output_hashes"]["items"][0]["reason"] == "missing_specialist_response"
+    )
     assert checks["attestations"]["status"] == "present"
     assert checks["ree"]["status"] == "validated"
     assert checks["ree"]["items"][0]["receipt_hash"] == "sha256:" + "22" * 32
@@ -432,6 +435,7 @@ def test_job_verify_endpoint_recomputes_signed_attestation_hash(
         ("score", 0.01),
         ("reasons", ["tampered_after_signing"]),
         ("signature_algorithm", "untrusted"),
+        ("unbound_runtime_claim", "verified_without_signature"),
     ],
 )
 def test_job_verify_endpoint_rejects_tampered_signed_attestation_fields(
@@ -484,7 +488,7 @@ def test_job_verify_endpoint_recomputes_specialist_output_hash(
 ) -> None:
     _configure_test_store(tmp_path)
     response = _specialist_response(
-        job_id="job-output-hash",
+        job_id="job-placeholder",
         node_role="risk",
         peer_id="peer-risk-test",
         summary="Risk output is structured.",
@@ -521,8 +525,10 @@ def test_job_verify_endpoint_recomputes_specialist_output_hash(
     output_hashes = payload["checks"]["output_hashes"]
     assert output_hashes["status"] == "verified"
     assert output_hashes["items"][0]["status"] == "verified"
-    assert output_hashes["items"][0]["output_hash"] == output_hash
-    assert output_hashes["items"][0]["recomputed_output_hash"] == output_hash
+    assert (
+        output_hashes["items"][0]["output_hash"]
+        == output_hashes["items"][0]["recomputed_output_hash"]
+    )
 
 
 def test_job_verify_endpoint_fails_tampered_specialist_output_hash(
@@ -530,7 +536,7 @@ def test_job_verify_endpoint_fails_tampered_specialist_output_hash(
 ) -> None:
     _configure_test_store(tmp_path)
     response = _specialist_response(
-        job_id="job-output-hash",
+        job_id="job-placeholder",
         node_role="risk",
         peer_id="peer-risk-test",
         summary="Risk output is structured.",
@@ -571,6 +577,85 @@ def test_job_verify_endpoint_fails_tampered_specialist_output_hash(
     assert output_hashes["items"][0]["status"] == "failed"
     assert output_hashes["items"][0]["output_hash"] == output_hash
     assert output_hashes["items"][0]["recomputed_output_hash"] != output_hash
+
+
+def test_job_verify_endpoint_rejects_duplicate_specialist_response_context(
+    tmp_path: Path,
+) -> None:
+    _configure_test_store(tmp_path)
+    response = _specialist_response(
+        job_id="job-placeholder",
+        node_role="risk",
+        peer_id="peer-risk-test",
+        summary="Bound specialist output.",
+        signals=[],
+        risks=["Support can fail."],
+        scenario_view=ScenarioView(bull=0.3, base=0.4, bear=0.3),
+    ).model_dump(mode="json")
+    tampered = {**response, "summary": "Unbound duplicate output."}
+    output_hash = canonical_json_hash(response)
+
+    async def _exercise() -> dict[str, object]:
+        job_id = await _create_completed_job_with_metadata(
+            run_metadata={
+                "verification_attestations": [
+                    {
+                        "job_id": "job-placeholder",
+                        "node_role": "risk",
+                        "peer_id": "peer-risk-test",
+                        "status": "accepted",
+                        "score": 0.91,
+                        "output_hash": output_hash,
+                    }
+                ],
+                "specialist_responses": [tampered, response],
+            }
+        )
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            return (await client.get(f"/jobs/{job_id}/verify")).json()
+
+    payload = asyncio.run(_exercise())
+
+    output_hashes = payload["checks"]["output_hashes"]
+    assert payload["status"] == "failed"
+    assert output_hashes["status"] == "failed"
+    assert output_hashes["items"][0]["reason"] == "duplicate_specialist_response"
+    assert output_hashes["items"][0]["specialist_response_count"] == 2
+
+
+def test_job_verify_endpoint_rejects_unmatched_specialist_response_context(
+    tmp_path: Path,
+) -> None:
+    _configure_test_store(tmp_path)
+    response = _specialist_response(
+        job_id="job-placeholder",
+        node_role="risk",
+        peer_id="peer-risk-test",
+        summary="Unmatched specialist output.",
+        signals=[],
+        risks=["Support can fail."],
+        scenario_view=ScenarioView(bull=0.3, base=0.4, bear=0.3),
+    ).model_dump(mode="json")
+
+    async def _exercise() -> dict[str, object]:
+        job_id = await _create_completed_job_with_metadata(
+            run_metadata={"specialist_responses": [response]}
+        )
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            return (await client.get(f"/jobs/{job_id}/verify")).json()
+
+    payload = asyncio.run(_exercise())
+
+    output_hashes = payload["checks"]["output_hashes"]
+    assert payload["status"] == "failed"
+    assert output_hashes["status"] == "failed"
+    assert output_hashes["items"][0]["reason"] == "missing_attestation"
 
 
 def test_job_verify_endpoint_rpc_verifies_confirmed_chain_receipt(
@@ -920,7 +1005,7 @@ async def _create_completed_job_with_metadata(
             news_headlines=[],
         ),
     )
-    metadata = {
+    metadata: dict[str, object] = {
         key: [
             {**item, "job_id": job.job_id}
             if isinstance(item, dict) and item.get("job_id") == "job-placeholder"
@@ -931,6 +1016,27 @@ async def _create_completed_job_with_metadata(
         else value
         for key, value in run_metadata.items()
     }
+    response_hash_replacements: dict[str, str] = {}
+    original_responses = run_metadata.get("specialist_responses", [])
+    bound_responses = metadata.get("specialist_responses", [])
+    if isinstance(original_responses, list) and isinstance(bound_responses, list):
+        for original, bound in zip(original_responses, bound_responses, strict=True):
+            if (
+                isinstance(original, dict)
+                and isinstance(bound, dict)
+                and original.get("job_id") == "job-placeholder"
+            ):
+                response_hash_replacements[canonical_json_hash(original)] = (
+                    canonical_json_hash(bound)
+                )
+    bound_attestations = metadata.get("verification_attestations", [])
+    if isinstance(bound_attestations, list):
+        for attestation in bound_attestations:
+            if not isinstance(attestation, dict):
+                continue
+            output_hash = str(attestation.get("output_hash", ""))
+            if output_hash in response_hash_replacements:
+                attestation["output_hash"] = response_hash_replacements[output_hash]
     await app.state.job_store.complete_job(
         job_id=job.job_id,
         memo=memo,

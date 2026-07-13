@@ -409,7 +409,9 @@ def test_proof_console_renders_phase_17_verification_labels(
     assert "present only" in html
 
 
-def test_proof_console_renders_mixed_verification_labels(tmp_path: Path) -> None:
+def test_proof_console_renders_failed_incomplete_payload_binding(
+    tmp_path: Path,
+) -> None:
     asyncio.run(_configure_completed_job_with_phase_17_evidence(tmp_path))
     latest_job = asyncio.run(app.state.job_store.get_latest_job())
     assert latest_job is not None
@@ -455,7 +457,7 @@ def test_proof_console_renders_mixed_verification_labels(tmp_path: Path) -> None
 
     assert response.status_code == 200
     html = response.text
-    assert "mixed: stored payload and present only" in html
+    assert "stored specialist payload verification failed" in html
     assert "checked by RPC" in html
 
 
