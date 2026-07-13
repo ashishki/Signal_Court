@@ -44,8 +44,8 @@ passive appendix:
 Completed job
   |
 Verification endpoint / UI action
-  |-- recompute specialist output hashes
-  |-- check verifier attestations/signatures
+  |-- bijectively bind specialist payloads to attestations and recompute hashes
+  |-- reject unknown attestation fields and check verifier signatures
   |-- validate or verify REE receipts according to policy
   |-- check Gensyn Testnet tx presence
   |-- compare indexed-chain projection
