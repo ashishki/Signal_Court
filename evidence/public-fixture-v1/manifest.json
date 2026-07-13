@@ -17,7 +17,7 @@
     "app/evaluation/attestations.py": "1e44e791e74adb26ce8a646e627ea3c237b8319dc1ebc09c6b0ca28445986b5e",
     "app/evaluation/scoring.py": "3bcb08a2dd8be713be4f514aee077f01deef93d0ff4ba26f0988ef104fac2eac",
     "app/evidence/fixtures/public_signed_run.json": "23508e293ec8784f72e63acf67ac7807c1c13ff382ef281a4152cbea3905a1ad",
-    "app/evidence/public_fixture.py": "e78b9ad92f1334c49a82632dfd991edafa4989aaae2c25b0d34486fe6776f58e",
+    "app/evidence/public_fixture.py": "6519267c49c0bef4698f2d0e0db95c9ceeaea6c8336a7b21f40583ef327d32d5",
     "app/identity/canonical.py": "8201510e06d68bc8b0709896e48c055a17ecb9e44c07d0c4a4d46dad18ee82a7",
     "app/identity/hashing.py": "27d4eb4fc903b8827ba4cdad009791633df97bb4f2238f6415cefd2a089aa80e",
     "app/identity/signing.py": "2b72ecac86489432c53c63ef5adaef2b868e57cade2bdec4200baa70ad0c8640",

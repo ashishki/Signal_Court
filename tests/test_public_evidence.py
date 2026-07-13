@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from app.evidence.public_fixture import (
+    _build_testnet_references,
     build_environment_record,
     build_public_evidence,
     render_json,
@@ -46,6 +47,20 @@ def test_public_evidence_does_not_publish_fixture_private_keys() -> None:
     assert "private_key" not in serialized
     assert "CHAIN_WRITER_PRIVATE_KEY" not in serialized
     assert "DEPLOYER_PRIVATE_KEY" not in serialized
+
+
+def test_testnet_reference_requires_exact_contract_address_transaction_row() -> None:
+    fixture = json.loads(
+        Path("app/evidence/fixtures/public_signed_run.json").read_text(encoding="utf-8")
+    )
+    references = fixture["historical_testnet_references"]
+    references[0]["address"], references[1]["address"] = (
+        references[1]["address"],
+        references[0]["address"],
+    )
+
+    with pytest.raises(ValueError, match="exact structured row"):
+        _build_testnet_references(references)
 
 
 def test_bundle_writer_and_verifier_detect_drift(tmp_path: Path) -> None:

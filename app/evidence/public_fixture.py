@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,12 @@ ROLE_SETTING_PREFIX = {
     "narrative": "narrative",
     "risk": "risk",
 }
+TESTNET_REFERENCE_ROW = re.compile(
+    r"^\|\s*`(?P<contract>[^`]+)`\s*"
+    r"\|\s*`(?P<address>0x[0-9a-fA-F]{40})`\s*"
+    r"\|\s*`(?P<deployment_transaction>0x[0-9a-fA-F]{64})`\s*"
+    r"\|\s*<(?P<explorer_url>https://[^>\s]+)>\s*\|$"
+)
 
 
 def build_public_evidence() -> dict[str, Any]:
@@ -363,14 +370,32 @@ def _build_testnet_references(
     references: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     source_text = TESTNET_SOURCE_PATH.read_text(encoding="utf-8")
+    documented_rows: dict[str, dict[str, str]] = {}
+    for line in source_text.splitlines():
+        match = TESTNET_REFERENCE_ROW.fullmatch(line)
+        if match is None:
+            continue
+        row = match.groupdict()
+        contract = row.pop("contract")
+        if contract in documented_rows:
+            raise ValueError(f"duplicate testnet contract row: {contract}")
+        documented_rows[contract] = row
+
     built: list[dict[str, Any]] = []
     for reference in references:
+        contract = str(reference["contract"])
         tx_hash = str(reference["deployment_transaction"])
         address = str(reference["address"])
         explorer_url = explorer_tx_url(tx_hash, EXPLORER_BASE_URL)
-        if any(value not in source_text for value in (tx_hash, address, explorer_url)):
+        expected_row = {
+            "address": address,
+            "deployment_transaction": tx_hash,
+            "explorer_url": explorer_url,
+        }
+        if documented_rows.get(contract) != expected_row:
             raise ValueError(
-                "testnet reference is not bound to docs/gensyn-contracts.md"
+                "testnet reference does not match its exact structured row in "
+                "docs/gensyn-contracts.md"
             )
         built.append(
             {

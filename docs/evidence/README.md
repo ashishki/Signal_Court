@@ -19,7 +19,7 @@ python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
 Expected addresses:
 
 - Evidence: `sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e`
-- Manifest: `sha256:f6cb59c6ab618f23c4b3cbb4e0c3b44baf45b1b936e6dc4fca4d6b2cfcd19f1a`
+- Manifest: `sha256:6c71e413507fbcaeb47b3ac89258689c79e8d2e7e68fe553f7b06982dbc349c4`
 
 `manifest.json` binds the evidence and environment bytes to the fixture, the
 synthetic receipt, the dependency lock, the generator, and the historical
@@ -34,7 +34,7 @@ environment and clearly states that it is provenance, not remote attestation.
 | Specialist signatures | `signed_executions` | Three EIP-191 signatures recover their public fixture wallets and bind canonical task/output hashes, role, and peer. | Synthetic responses and identities; no external specialist ran. |
 | Verifier attestations | `verifier_attestations` | Three accepted verdicts have recomputable attestation hashes and recover the fixture verifier wallet. | Acceptance is deterministic fixture scoring, not correctness of a market thesis. |
 | REE receipt | `receipt_claim_checks` | The synthetic prompt, canonical parameters, and text output match their component hashes; the master commitment matches all declared component hashes. | Commit/config source bytes and non-content metadata are not reconstructed. No model inference or external re-execution; `validated` is not `verified`. |
-| Testnet provenance | `historical_testnet_provenance` | Three deployment references are byte-bound to `docs/gensyn-contracts.md` and have deterministic explorer URLs. | Historical documentation references only; no RPC lookup or transaction write occurred. |
+| Testnet provenance | `historical_testnet_provenance` | Each contract, address, deployment transaction, and explorer URL matches one exact structured row in `docs/gensyn-contracts.md`. | Historical documentation references only; no RPC lookup or transaction write occurred. |
 | Environment | `environment.json`, `requirements-lock.txt` | Canonical bytes have an exact recorded environment and locked Python dependency set. | The environment record is not a hardware, enclave, or remote-runtime attestation. |
 
 ## Files
