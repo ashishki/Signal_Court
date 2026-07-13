@@ -108,9 +108,9 @@ def test_positioning_copy_uses_verification_language() -> None:
 def test_demo_runbook_contains_judge_first_script() -> None:
     runbook = Path("docs/demo-runbook.md").read_text(encoding="utf-8")
 
-    assert "Target 90-second flow after prewarm" in runbook
+    assert "Conditional 90-second flow after a newly verified prewarm" in runbook
     assert "30-second sponsor pitch" in runbook
-    assert "Completed proof console with active `Verify Run` tab" in runbook
+    assert "For a newly executed and retained run" in runbook
     assert "Do not trust the memo. Verify every specialist behind it." in runbook
     assert "decision support, not trading advice" in runbook
 

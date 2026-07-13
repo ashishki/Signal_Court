@@ -16,6 +16,7 @@ from app.evidence.public_fixture import (
 TRACKED_BUNDLE = Path("evidence/public-fixture-v1")
 README = Path("README.md")
 EVIDENCE_INDEX = Path("docs/evidence/README.md")
+DEMO_RUNBOOK = Path("docs/demo-runbook.md")
 PROOF_ISSUE_TEMPLATE = Path(".github/ISSUE_TEMPLATE/proof-verification-defect.yml")
 
 
@@ -140,6 +141,25 @@ def test_reviewer_path_and_negative_claims_are_explicit() -> None:
         "protocol security",
     ):
         assert boundary in index
+
+
+def test_demo_runbook_treats_untracked_full_battle_notes_as_present_only() -> None:
+    runbook = DEMO_RUNBOOK.read_text(encoding="utf-8")
+
+    assert "## Historical Recording Notes (`present_only`)" in runbook
+    assert "absent from a clean\ncheckout" in runbook
+    assert "No browser URL or job-specific proof-bundle URL" in runbook
+    for stale_claim in (
+        "Current Recording State",
+        "Current verified full-battle",
+        "Current browser walkthrough target",
+        "Current proof bundle",
+        "latest full-battle run completed successfully",
+        "10ffc70d-1149-490a-8287-51c74d36cf01",
+        "3beec5c8-3a95-4058-8962-9408fb951465",
+        ".runtime/submission-pack/20260502_125554",
+    ):
+        assert stale_claim not in runbook
 
 
 def test_proof_defect_issue_form_forbids_private_artifacts() -> None:
