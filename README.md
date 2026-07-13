@@ -5,6 +5,12 @@ Gensyn track.
 
 Status: research reference. The project is preserved as a proof-console artifact for Entropy Core and trader intelligence design. Roadmap: `docs/PROJECT_PLAN.md`.
 
+Public evidence status: the repository now tracks a credential-free,
+deterministic fixture bundle for routing selection, EIP-191 specialist
+signatures, signed verifier attestations, and local REE receipt consistency.
+Start with [`docs/evidence/README.md`](docs/evidence/README.md). This is an
+evidence-tag candidate, not a live-network or production release.
+
 Do not trust the memo. Verify every specialist behind it.
 
 Signal Count turns one market thesis into an auditable risk memo with visible
@@ -183,6 +189,34 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt -e .
 ```
+
+For the exact dependency set used by CI and the tracked evidence bundle, use
+`requirements-lock.txt` instead of `requirements-dev.txt`.
+
+## Five-minute Public Evidence Path
+
+From a clean checkout:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-lock.txt -e .
+python -m pip check
+python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
+```
+
+Expected evidence content address:
+
+```text
+sha256:34f1f3f433074e899a734db2a4c8a233eb50ad045a4130902fbd0b6cce1011c7
+```
+
+The command regenerates the artifact in memory and compares every tracked byte
+plus source checksums. It uses the production capability-selection, signing,
+receipt-check, and verifier-attestation code paths. It performs no AXL
+dispatch, model inference, RPC lookup, or testnet write and requires no
+credentials. All task data, responses, identities, and signing keys are public
+synthetic fixtures.
 
 ## Run
 
@@ -367,7 +401,7 @@ Stop the demo processes with:
 scripts/stop_full_battle_demo.sh
 ```
 
-Current verified full-battle evidence from the May 2, 2026 recording run:
+Historical operator notes from the May 2, 2026 full-battle recording reported:
 
 - Job ID: `3beec5c8-3a95-4058-8962-9408fb951465`.
 - Runtime: `773s` end to end.
@@ -380,6 +414,11 @@ Current verified full-battle evidence from the May 2, 2026 recording run:
 - Native test payout size: `1000000000 wei` per role.
 - Indexed projection after replay: `tasks=9`, `contributions=23`,
   `verifications=0`, `reputation=23`.
+
+The corresponding ignored `.runtime/full-battle` bundle is not present in a
+clean public checkout, so these notes are `present_only`: the tracked public
+fixture does not reproduce or upgrade them into release evidence. Do not cite
+the historical counts as current network, user, production, or security proof.
 
 ## Proof Console UI
 
@@ -413,24 +452,21 @@ AXL dispatch evidence
   -> indexed chain-event projection
 ```
 
-What is verified locally:
+What the tracked public fixture verifies locally:
 
-- The live AXL path reaches specialist `/mcp` services through the local AXL
-  bridge and MCP router.
-- The same-machine two-node mesh demonstrates distinct AXL peer identities.
-- Signed execution tamper checks catch changed payloads, signer swaps, forged
-  signatures, role substitutions, and receipt overclaims.
-- The deterministic chain analyst can replay the same pinned fixture into the
-  same output hash.
-- Reputation payout policy tests cover score-driven reputation movement,
-  slashing, cumulative payouts, and JSON-stable ledgers.
-- REE receipt parsing and hash validation are covered by tests, and the real
-  REE E2E script has been run against Gensyn REE.
-- Gensyn Testnet task/contribution/reputation transaction helpers and receipt
-  metadata are covered by tests; previously broadcast deployment and live job
-  receipts are documented in `docs/gensyn-contracts.md`.
-- The event indexer can rebuild task, contribution, verification,
-  finalization, and reputation projections from indexed chain logs.
+- The capability registry selects three fixture peers from a fixed topology and
+  records the intended `/mcp/{peer}/{service}` targets without dispatching.
+- Three specialist response envelopes canonical-hash, recover their fixture
+  EIP-191 signers, and bind task, role, peer, wallet, and output.
+- Three verifier attestations canonical-hash, carry EIP-191 signatures, and
+  recover the fixture verifier wallet.
+- The synthetic risk receipt parses and recomputes under the supported REE hash
+  algorithm; `validated` means only that local consistency check.
+- Historical deployment transaction references remain bound to the checksum of
+  `docs/gensyn-contracts.md`; the fixture does not query RPC or confirm them.
+
+The broader live AXL, REE, testnet-write, payout, and indexer paths remain in the
+codebase and tests, but they are outside this credential-free evidence claim.
 
 What is not claimed:
 
@@ -450,13 +486,10 @@ ruff check app/ tests/
 ruff format --check app/ tests/
 ```
 
-Current local verification:
-
-```text
-159 passed, 1 skipped in socket-restricted sandbox
-ruff check .: pass
-ruff format --check .: pass
-```
+CI installs the locked dependency graph, runs `pip check`, lint/format checks,
+the complete test suite, and exact public-bundle reproduction. A green check is
+code/evidence verification; it is not evidence of external use or production
+operation.
 
 ## Submission Notes
 

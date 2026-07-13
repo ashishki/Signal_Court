@@ -14,9 +14,13 @@ def test_ci_workflow_targets_python_app_and_tests() -> None:
     assert 'python-version: "3.11"' in content
     assert "pip install -r requirements-lock.txt -e ." in content
     assert "python -m pip check" in content
-    assert "ruff check app/ tests/" in content
-    assert "ruff format --check app/ tests/" in content
+    assert "ruff check app/ tests/ scripts/*.py" in content
+    assert "ruff format --check app/ tests/ scripts/*.py" in content
     assert "python -m pytest tests/ -q --tb=short" in content
+    assert (
+        "python scripts/build_public_evidence.py --verify "
+        "evidence/public-fixture-v1" in content
+    )
 
 
 def test_ci_workflow_uses_placeholder_env_values() -> None:

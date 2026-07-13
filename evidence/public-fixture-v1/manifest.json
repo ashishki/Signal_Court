@@ -1,0 +1,34 @@
+{
+  "artifact": {
+    "content_address": "sha256:34f1f3f433074e899a734db2a4c8a233eb50ad045a4130902fbd0b6cce1011c7",
+    "path": "evidence.json",
+    "sha256": "34f1f3f433074e899a734db2a4c8a233eb50ad045a4130902fbd0b6cce1011c7"
+  },
+  "environment": {
+    "path": "environment.json",
+    "sha256": "85c36947c19906e886e41f17601f6461e7b44f8f9406f3e9c2932353a4c3a716"
+  },
+  "schema": "signal-count.public-evidence-manifest/v1",
+  "sources": {
+    "app/axl/registry.py": "1827396cfce0ebfbd575a041d7a0cdd716b3d2b80faab2662d9b6ca9e3bddc95",
+    "app/chain/explorer.py": "16eb106909bd4ccab3069bc5dcbaceffa4cc464b415324786ba64ba22489fa91",
+    "app/config/settings.py": "6e0d26d3606e60192a026e506dcbf58f86264eb3a3fad54d9dd540a0b768ec5b",
+    "app/evaluation/attestations.py": "1e44e791e74adb26ce8a646e627ea3c237b8319dc1ebc09c6b0ca28445986b5e",
+    "app/evaluation/scoring.py": "22f0f15da62d0287990c97cf496954dc89a940d7f992024121f66daa496316f2",
+    "app/evidence/fixtures/public_signed_run.json": "23508e293ec8784f72e63acf67ac7807c1c13ff382ef281a4152cbea3905a1ad",
+    "app/evidence/public_fixture.py": "a2884396e5d31a95240b58a7cfe35ec68a59ab1732eeb0247be2d8ef1f0c80c1",
+    "app/identity/canonical.py": "8201510e06d68bc8b0709896e48c055a17ecb9e44c07d0c4a4d46dad18ee82a7",
+    "app/identity/hashing.py": "27d4eb4fc903b8827ba4cdad009791633df97bb4f2238f6415cefd2a089aa80e",
+    "app/identity/signing.py": "426330b2aaa2b109d7091e93e636382fc466f042fc3c7fc98c44b0ae57cc2f25",
+    "app/nodes/verifier/service.py": "5a478e22d1437cd56d7a6e7f3f27826df050774a4908fdcc984358cd9934307f",
+    "app/ree/claims.py": "cdcd0797cdb149ddca6e76a9301fc79b9414a60571a7608cb65a5b6c3fc8f429",
+    "app/ree/fixtures/synthetic_public_receipt.json": "3558a88e3cfa8706eb19f35d91359ba9692f04c60b39fdd806742a53ee914a8b",
+    "app/ree/receipts.py": "73663e9b7a02e368ad1d172722f2b26e03ac3046e958c53ecedcb6693576480a",
+    "app/ree/validator.py": "c97ac9b17eaa6104b969fb36a13e836d7efc0770f52421bcc406a01f2742b32a",
+    "app/schemas/contracts.py": "fafdf1cb7ce6e3b951fa2fd8046282a5ef8e7812aa5101fe96e7ad2b6549f7e7",
+    "docs/gensyn-contracts.md": "8cbc10eeb75d3d714c22599b9fa92adc370c0f0cc2b1d1752985223f29b6a6c1",
+    "requirements-lock.txt": "68832ce1295273daeaa0ca95dc38a462bdaf4eeb6006b9c39d635cd3ea09e94a",
+    "scripts/build_public_evidence.py": "e414ec13457aa6bc2dce153d05ba94659f993fe234ef5de9a541019eda074b22"
+  },
+  "verification_command": "python scripts/build_public_evidence.py --verify evidence/public-fixture-v1"
+}

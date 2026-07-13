@@ -1,0 +1,20 @@
+{
+  "canonical_generation_environment": {
+    "architecture": "x86_64",
+    "dependency_lock": "requirements-lock.txt",
+    "dependency_lock_sha256": "68832ce1295273daeaa0ca95dc38a462bdaf4eeb6006b9c39d635cd3ea09e94a",
+    "kernel": "Linux 6.17.0-35-generic",
+    "operating_system": "Ubuntu 24.04",
+    "python": "CPython 3.12.3"
+  },
+  "limitations": [
+    "This environment record is provenance for the canonical bytes, not a remote attestation.",
+    "Semantic verification is expected to remain deterministic on supported Python versions with the locked dependencies."
+  ],
+  "runtime_contract": {
+    "credentials_required": [],
+    "network_required": false,
+    "python": ">=3.11"
+  },
+  "schema": "signal-count.evidence-environment/v1"
+}
