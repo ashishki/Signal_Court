@@ -2,8 +2,9 @@
 
 ## Judge-First Demo Target
 
-The winning demo should start from a completed proof console, not from setup or
-a blank thesis form.
+If a new demo run is executed and its raw artifacts are retained, the walkthrough
+should start from that completed proof console, not from setup or a blank thesis
+form.
 
 One-sentence pitch:
 
@@ -12,10 +13,10 @@ Signal Count lets you verify every AI agent behind a risk memo: AXL peer,
 wallet, output hash, REE receipt, verifier attestation, and Gensyn Testnet tx.
 ```
 
-Target 90-second flow after prewarm:
+Conditional 90-second flow after a newly verified prewarm:
 
-1. Open `/` after the run is prewarmed. The first screen should already show
-   `Latest Verified Run` and the active `Verify Run` / proof ledger tab.
+1. Open `/` after the new run is prewarmed. Confirm the displayed job ID matches
+   the retained raw job artifact before using the active `Verify Run` tab.
 2. Say: "Do not trust the memo. Verify every specialist behind it."
 3. Click `open proof bundle` and show output hashes, verifier attestations, REE,
    and chain status. Say which rows are `verified`, `validated`, `present`, or
@@ -38,9 +39,9 @@ Target 90-second flow after prewarm:
 ```text
 Signal Count is a proof console for AXL-routed AI analyst work. A coordinator
 routes regime, narrative, and risk specialists through AXL, then the UI lets a
-judge verify the run: peer IDs, wallet attestations, output hashes, REE receipt
-metadata, Gensyn Testnet txs, and source quality. The point is not that agents
-wrote a memo. The point is that every agent behind the memo is auditable.
+judge inspect the run: peer IDs, output hashes, verifier status, REE receipt
+metadata, Gensyn Testnet contribution txs, and source quality. The point is not
+that agents wrote a memo. The point is that the evidence boundary is visible.
 ```
 
 Remove from the judge-visible flow:
@@ -48,74 +49,51 @@ Remove from the judge-visible flow:
 - long terminal setup
 - raw JSON unless asked
 - random mesh animation metrics as proof
-- native test payout discussion unless the judge asks about incentives
+- historical or isolated payout helpers presented as current runtime evidence
 - offline fixture evidence unless it is clearly labelled as non-live
 
-## Current Recording State
+## Historical Recording Notes (`present_only`)
 
-Current status from May 1, 2026:
+Older operator notes described a May 2026 full-battle capture, but its ignored
+`.runtime/full-battle` directory and submission pack are absent from a clean
+checkout. Those notes are `present_only`: this runbook does not claim an active
+successful full-battle run, available Docker images, open browser session,
+verified proof bundle, or replayable raw evidence.
 
-- `scripts/run_full_battle_demo.sh` now executes directly and supports
-  `--preflight-only`.
-- Required Docker images are available locally: `ree` / `gensynai/ree:v0.2.0`
-  and `gensyn-axl-local`.
-- Full-battle preflight passes outside the sandbox when the recording ports are
-  free.
-- The latest full-battle run completed successfully and wrote artifacts to
-  `.runtime/full-battle/`.
-- The proof console is currently meant to be recorded from a prewarmed completed
-  run, not from terminal setup.
-- CPU-only REE can exceed 900 seconds on some local machines. The full-battle
-  runner uses `FULL_BATTLE_JOB_TIMEOUT_SECONDS=1500` by default; override it
-  only when you know the local REE path is faster or slower.
-
-Run this before final recording:
+For a new capture, first run the credential and dependency preflight:
 
 ```bash
 scripts/run_full_battle_demo.sh --preflight-only
 ```
 
-Run the latest-artifact rehearsal before opening the browser:
+Only after a new full-battle run has produced raw artifacts, run the artifact
+rehearsal helper:
 
 ```bash
 scripts/verify_latest_artifact.sh
 ```
 
-This validates `.runtime/full-battle` locally and writes
-`.runtime/full-battle/rehearsal-report.json`. If the proof console is already
-running at `http://127.0.0.1:8004`, it also fetches the live
-`/jobs/{job_id}/verify` bundle. To make the live proof-console check mandatory,
-run:
+The command must fail when `.runtime/full-battle` is absent. With a newly
+generated directory it writes `.runtime/full-battle/rehearsal-report.json`.
+If the matching proof-console process was independently started, the optional
+`--require-live` mode also checks that run's `/jobs/{job_id}/verify` response:
 
 ```bash
 scripts/verify_latest_artifact.sh --require-live
 ```
 
-To replay the saved full-battle artifact without starting the app, run:
+To replay a newly generated full-battle artifact without starting the app, run:
 
 ```bash
 scripts/replay_full_battle_artifact.sh
 ```
 
-This writes `.runtime/full-battle/artifact-replay-report.json` and labels old
-artifact checks as `present_only` when the saved job lacks repeat-validation
-material such as `specialist_responses` or full REE receipt body/path.
+This writes `.runtime/full-battle/artifact-replay-report.json`. Any artifact
+that lacks repeat-validation material such as `specialist_responses` or the full
+REE receipt body/path must remain `present_only`.
 
-If `http://127.0.0.1:8004` is already serving the saved proof console, preflight
-will fail on the occupied app port. Stop that UI before running a new full-battle
-capture.
-
-Current browser walkthrough target:
-
-```text
-http://127.0.0.1:8004
-```
-
-Current proof bundle:
-
-```text
-http://127.0.0.1:8004/jobs/10ffc70d-1149-490a-8287-51c74d36cf01/verify
-```
+No browser URL or job-specific proof-bundle URL is a tracked evidence claim.
+Use only URLs printed by the new capture and bind them to its retained job ID.
 
 ## Offline Preview
 
@@ -182,11 +160,13 @@ Expected evidence for a successful local AXL run:
 - Each dispatch target uses `/mcp/{axl_public_key}/{service_name}`.
 - `Topology Snapshot` shows the same AXL public key.
 
-Current verified scope:
+Evidence classification for a newly captured run:
 
-- Verified: local Gensyn AXL node -> MCP router -> specialist `/mcp` services.
-- Verified: coordinator creates a full completed job through `axl-mcp`.
-- Not claimed: remote multi-machine AXL mesh with separate public keys.
+- The checks above can establish a local Gensyn AXL node -> MCP router ->
+  specialist `/mcp` path when their raw output is retained.
+- A completed job can establish coordinator dispatch through `axl-mcp` when the
+  job ledger and topology snapshot are retained together.
+- Neither result establishes a remote multi-machine AXL mesh.
 
 If the UI returns a server error after a live run, check the topology shape. The
 live AXL node may return `peers=null`; the UI now handles that shape and falls
@@ -265,9 +245,10 @@ Expected mesh evidence:
 - `Run Evidence` dispatch targets use Node B's public key.
 - `partial=false` and all three roles are `completed`.
 
-This proves a local multi-peer AXL mesh with distinct peer identities. It is
-stronger than the single-node bridge demo, but it is still a local same-machine
-mesh unless run across separate machines.
+When retained with the process logs and topology snapshots, those results
+support a local multi-peer AXL claim with distinct peer identities. They do not
+support a remote or multi-machine claim unless the run actually uses separate
+machines and records that boundary.
 
 ## Full Battle Demo
 
@@ -286,8 +267,9 @@ The script uses:
 - MCP router and three specialist services.
 - Coordinator app on `http://127.0.0.1:8004`.
 - Gensyn REE for the risk specialist path.
-- Gensyn Testnet task/contribution/reputation receipts.
-- Tiny capped native test-ETH payouts of `1000000000 wei` per role by default.
+- Gensyn Testnet task and contribution receipts.
+- No runtime reputation or payout transaction: normal AXL dispatch returns
+  unsigned `SpecialistResponse` objects, and the script disables those writers.
 - One-shot chain indexer after the run completes.
 
 Artifacts are written under:
@@ -311,25 +293,16 @@ after recording:
 scripts/stop_full_battle_demo.sh
 ```
 
-Current verified full-battle reference run from May 2, 2026:
-
-- Job ID: `3beec5c8-3a95-4058-8962-9408fb951465`.
-- Runtime: `773s` end to end.
-- Live job completed at `+760s`; the remaining time was one-shot indexing and
-  evidence summary generation.
-- Roles: `regime`, `narrative`, and `risk` completed.
-- REE status: `validated`.
-- Chain receipts: 7 transaction receipts.
-- Live verification bundle: `output_hashes=verified`, `attestations=present`,
-  `ree=validated`, `chain=verified`.
-- Indexed projection after replay: `tasks=9`, `contributions=23`,
-  `verifications=0`, `reputation=23`.
-- Latest evidence pack:
-  `.runtime/submission-pack/20260502_125554`.
+Historical operator notes mention a May 2026 run, but the raw job, logs,
+receipts, browser snapshot, verification response, and submission pack are not
+tracked. Treat every historical full-battle result as `present_only`; do not
+quote its job ID, runtime, counts, REE status, chain status, or bundle status as
+active or verified evidence. A replacement claim requires a new capture whose
+raw artifact set passes the rehearsal and replay commands above.
 
 ## Screenshot Set
 
-Capture these screenshots in order:
+For a newly executed and retained run, capture these screenshots in order:
 
 1. Completed proof console with active `Verify Run` tab.
 2. `/jobs/{job_id}/verify` proof bundle.
@@ -354,10 +327,12 @@ Capture these screenshots in order:
 
 - Offline preview is only for stable UI capture and must stay labelled as
   `offline-demo-preview`.
-- Same-machine multi-peer AXL mesh proves distinct local AXL peer identities,
-  not remote multi-machine deployment.
+- A same-machine multi-peer AXL capture can evidence distinct local peer
+  identities only when its raw topology and process artifacts are retained; it
+  does not evidence a remote multi-machine deployment.
 - REE should be described as present only when a real receipt exists for the
   run being shown.
 - Gensyn Testnet receipt claims require real tx hashes or explorer links.
-- Native test-ETH payouts are tiny, capped, opt-in testnet evidence; do not
-  describe them as stablecoin or real-money rewards.
+- No current native test-ETH payout or reputation-transaction evidence is
+  claimed. The isolated helpers and historical notes do not prove execution by
+  the normal unsigned coordinator path.

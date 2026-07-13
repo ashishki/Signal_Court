@@ -177,6 +177,7 @@ def _peer_reputation_score(
         for update in reputation_updates
         if update.get("node_role") == role
         and str(update.get("peer_id", peer_id)) == peer_id
+        and update.get("credit_eligible") is True
     ]
     return max(scores) if scores else 0.0
 

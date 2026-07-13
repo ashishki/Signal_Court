@@ -7,11 +7,12 @@ commit_hash, config_hash, prompt_hash, parameters_hash, tokens_hash.
 Gensyn REE v0.2.0 computes receipt_hash as SHA-256 over the pipe-delimited
 component hashes, returned with a "sha256:" prefix.
 
-Local parsing and hash recomputation alone are not the same as REE-side
-verification. receipt_status="validated" means the local hash recomputed
-correctly. receipt_status="verified" is reserved for full re-execution.
-receipt_status="parsed" means the receipt is structurally valid and the
-hash did not recompute under the currently supported SDK algorithm.
+Local parsing and content/hash recomputation are not the same as REE-side
+verification. receipt_status="validated" means the embedded prompt,
+parameters, and text output match their component hashes and the master hash
+recomputed correctly. receipt_status="verified" is reserved for full
+re-execution. receipt_status="parsed" means the receipt is structurally valid
+but one or more hashes did not recompute under a supported SDK algorithm.
 """
 
 from __future__ import annotations
@@ -21,11 +22,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReeReceipt(BaseModel):
     """Parsed view of a Gensyn REE receipt JSON document (16-field schema)."""
+
+    model_config = ConfigDict(extra="forbid")
 
     model_name: str = Field(min_length=1)
     commit_hash: str = Field(min_length=1)
@@ -99,6 +102,20 @@ def _normalize_receipt_data(data: dict[str, Any]) -> dict[str, Any]:
     if "model_name" in data:
         return data
 
+    _forbid_unknown_keys(
+        data,
+        allowed={
+            "version",
+            "ree_version",
+            "model",
+            "input",
+            "output",
+            "execution",
+            "hashes",
+        },
+        location="receipt",
+    )
+
     model = data.get("model")
     input_data = data.get("input")
     output = data.get("output")
@@ -109,6 +126,23 @@ def _normalize_receipt_data(data: dict[str, Any]) -> dict[str, Any]:
         for section in (model, input_data, output, execution, hashes)
     ):
         return data
+
+    for location, section, allowed in (
+        ("model", model, {"name", "commit_hash", "config_hash"}),
+        (
+            "input",
+            input_data,
+            {"prompt", "prompt_hash", "parameters", "parameters_hash"},
+        ),
+        (
+            "output",
+            output,
+            {"tokens_hash", "token_count", "finish_reason", "text_output"},
+        ),
+        ("execution", execution, {"device_type", "device_name"}),
+        ("hashes", hashes, {"receipt_hash"}),
+    ):
+        _forbid_unknown_keys(section, allowed=allowed, location=location)
 
     return {
         "model_name": model.get("name", ""),
@@ -128,3 +162,14 @@ def _normalize_receipt_data(data: dict[str, Any]) -> dict[str, Any]:
         "version": data.get("version", ""),
         "ree_version": data.get("ree_version", ""),
     }
+
+
+def _forbid_unknown_keys(
+    data: dict[str, Any],
+    *,
+    allowed: set[str],
+    location: str,
+) -> None:
+    extras = sorted(set(data) - allowed)
+    if extras:
+        raise ValueError(f"unknown {location} fields: {extras}")

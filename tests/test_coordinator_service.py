@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+import pytest
+
 from app.axl.registry import AXLRegistry
 from app.config.settings import Settings
 from app.coordinator.service import CoordinatorService
@@ -79,6 +81,24 @@ class FallbackAXLClient(StubAXLClient):
         if peer_id == "peer-risk-a":
             raise TimeoutError("first risk peer timed out")
         return await super().dispatch_specialist(peer_id, service_name, payload)
+
+
+class ContextSubstitutionAXLClient(StubAXLClient):
+    def __init__(self, *, field: str, replacement: str) -> None:
+        super().__init__()
+        self.field = field
+        self.replacement = replacement
+
+    async def dispatch_specialist(
+        self,
+        peer_id: str,
+        service_name: str,
+        payload: dict[str, object],
+    ) -> SpecialistResponse:
+        response = await super().dispatch_specialist(peer_id, service_name, payload)
+        if payload["role"] != "risk":
+            return response
+        return response.model_copy(update={self.field: self.replacement})
 
 
 class StubMarketDataProvider:
@@ -318,6 +338,63 @@ def test_coordinator_falls_back_to_next_peer_candidate() -> None:
         "selection_reason": "capability:topology-up; fallback_from=peer-risk-a",
         "attempted_peer_ids": ["peer-risk-a", "peer-risk-b"],
     }
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("job_id", "attacker-job"),
+        ("node_role", "attacker-role"),
+        ("peer_id", "attacker-peer"),
+    ),
+)
+def test_coordinator_rejects_response_context_substitution_before_verification(
+    field: str,
+    replacement: str,
+) -> None:
+    verifier = StubVerifier()
+    service = CoordinatorService(
+        axl_client=ContextSubstitutionAXLClient(
+            field=field,
+            replacement=replacement,
+        ),
+        registry=AXLRegistry(Settings()),
+        market_data_provider=StubMarketDataProvider(),
+        news_feed_provider=StubNewsFeedProvider(),
+        llm_client=object(),
+        verifier=verifier,
+    )
+    request = ThesisRequest(
+        thesis="ETH can extend higher on ETF demand.",
+        asset="ETH",
+        horizon_days=30,
+    )
+
+    result = asyncio.run(service.dispatch(job_id="job-context-bound", request=request))
+
+    assert [response.node_role for response in result.responses] == [
+        "regime",
+        "narrative",
+    ]
+    assert result.rejected_responses == []
+    assert result.missing_roles == ["risk"]
+    assert result.partial is True
+    assert verifier.calls[0][1] == ["regime", "narrative"]
+    risk_record = next(
+        record for record in result.node_execution_records if record.node_role == "risk"
+    )
+    assert risk_record.status == "invalid_response"
+    assert risk_record.peer_id == "peer-risk-example"
+    assert all(
+        response["job_id"] == "job-context-bound"
+        and response["node_role"] in {"regime", "narrative"}
+        and response["peer_id"] != "attacker-peer"
+        for response in result.run_metadata["specialist_responses"]
+    )
+    assert all(
+        update["credit_eligible"] is False and update["reputation_points"] == 0
+        for update in result.run_metadata["reputation_updates"]
+    )
 
 
 def test_coordinator_dispatch_payloads_are_transport_safe() -> None:

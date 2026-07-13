@@ -48,10 +48,14 @@ def sign_agent_execution(
 
     if signer.lower() != normalized_identity.wallet.lower():
         raise ValueError("private key does not match agent identity wallet")
+    if task.job_id != response.job_id:
+        raise ValueError("task job_id does not match specialist response")
     if response.node_role != normalized_identity.role:
         raise ValueError("agent identity role does not match specialist response")
     if response.peer_id != normalized_identity.peer_id:
         raise ValueError("agent identity peer_id does not match specialist response")
+    if not _response_wallet_matches_identity(response, normalized_identity):
+        raise ValueError("specialist response wallet does not match agent identity")
 
     task_digest = task_hash(task)
     output_digest = output_hash(response)
@@ -98,9 +102,13 @@ def verify_signed_execution(signed_execution: SignedAgentExecution) -> bool:
 
     if envelope.algorithm != "eip191":
         return False
+    if signed_execution.task.job_id != response.job_id:
+        return False
     if response.node_role != identity.role or response.peer_id != identity.peer_id:
         return False
     if envelope.signer.lower() != identity.wallet.lower():
+        return False
+    if not _response_wallet_matches_identity(response, identity):
         return False
     if envelope.task_hash != task_hash(signed_execution.task):
         return False
@@ -116,6 +124,17 @@ def verify_signed_execution(signed_execution: SignedAgentExecution) -> bool:
 
 def _normalize_identity(identity: AgentIdentity) -> AgentIdentity:
     return identity.model_copy(update={"wallet": to_checksum_address(identity.wallet)})
+
+
+def _response_wallet_matches_identity(
+    response: SpecialistResponse,
+    identity: AgentIdentity,
+) -> bool:
+    if response.agent_wallet is None:
+        return True
+    return to_checksum_address(response.agent_wallet) == to_checksum_address(
+        identity.wallet
+    )
 
 
 def _signable_message(

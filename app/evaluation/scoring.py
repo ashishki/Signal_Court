@@ -95,6 +95,4 @@ def _receipt_strength(response: SpecialistResponse) -> float:
         return 0.85
     if response.receipt_status == "parsed":
         return 0.55
-    if response.ree_receipt_hash:
-        return 0.35
     return 0.0

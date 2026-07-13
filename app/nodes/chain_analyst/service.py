@@ -24,7 +24,6 @@ class ChainAnalystService:
     rpc: RPCAdapter
     peer_id: str = "peer-chain-analyst-001"
     agent_wallet: str | None = None
-    receipt_label: str = "verified"
 
     metrics: ChainMetrics | None = field(default=None, init=False)
 
@@ -42,7 +41,6 @@ class ChainAnalystService:
             metrics=metrics,
             peer_id=self.peer_id,
             agent_wallet=self.agent_wallet,
-            receipt_label=self.receipt_label,
         )
 
 
@@ -53,13 +51,11 @@ def analyze(
     peer_id: str = "peer-chain-analyst-001",
     agent_wallet: str | None = None,
     block_number: int | None = None,
-    receipt_label: str = "verified",
 ) -> SpecialistResponse:
     return ChainAnalystService(
         rpc=rpc,
         peer_id=peer_id,
         agent_wallet=agent_wallet,
-        receipt_label=receipt_label,
     ).analyze(task=task, block_number=block_number)
 
 
@@ -69,7 +65,6 @@ def _build_response(
     metrics: ChainMetrics,
     peer_id: str,
     agent_wallet: str | None,
-    receipt_label: str,
 ) -> SpecialistResponse:
     summary = _summary_text(metrics)
     signals = _role_signals(metrics)
@@ -102,16 +97,6 @@ def _build_response(
         citations=citations,
         timestamp=timestamp,
         agent_wallet=agent_wallet,
-        ree_receipt_hash=metrics_hash,
-        receipt_status=receipt_label,
-        ree_prompt_hash=None,
-        ree_tokens_hash=None,
-        ree_model_name="chain-analyst-deterministic-v1",
-        ree_receipt_body={
-            "kind": "chain_analyst_metrics",
-            "metrics": metrics.to_dict(),
-        },
-        ree_receipt_path=None,
     )
 
 

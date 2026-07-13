@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ThesisRequest(BaseModel):
@@ -75,6 +75,8 @@ class SignedAgentExecution(BaseModel):
 
 
 class VerificationAttestation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     job_id: str = Field(min_length=1)
     node_role: str = Field(min_length=1)
     peer_id: str = Field(min_length=1)

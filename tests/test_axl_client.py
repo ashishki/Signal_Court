@@ -59,6 +59,7 @@ def test_capability_registry_lists_role_candidates() -> None:
             {
                 "node_role": "risk",
                 "peer_id": "peer-risk-example",
+                "credit_eligible": True,
                 "reputation_points": 91.5,
             }
         ],
@@ -72,6 +73,24 @@ def test_capability_registry_lists_role_candidates() -> None:
     assert candidates[0].reputation_score == 91.5
     assert selection.service.peer_id == "peer-risk-example"
     assert selection.reason == "capability:static-role-match"
+
+
+def test_capability_registry_ignores_ineligible_reputation_credit() -> None:
+    registry = AXLCapabilityRegistry(AXLRegistry(Settings()))
+
+    candidates = registry.list_candidates(
+        "risk",
+        reputation_updates=[
+            {
+                "node_role": "risk",
+                "peer_id": "peer-risk-example",
+                "credit_eligible": False,
+                "reputation_points": 999999.0,
+            }
+        ],
+    )
+
+    assert candidates[0].reputation_score == 0.0
 
 
 def test_capability_registry_selects_topology_live_candidate() -> None:

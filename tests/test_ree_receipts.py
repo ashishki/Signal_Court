@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from app.ree.receipts import compute_receipt_hash, parse_ree_receipt
 from app.ree.validator import validate_ree_receipt
 
@@ -46,6 +48,10 @@ def test_valid_ree_receipt_passes_validation() -> None:
     assert result.matches is True
     assert result.is_valid is True
     assert result.expected_receipt_hash == receipt.receipt_hash
+    assert result.prompt_hash_matches is True
+    assert result.parameters_hash_matches is True
+    assert result.tokens_hash_matches is True
+    assert result.failure_reasons == ()
 
 
 def test_parse_nested_gensyn_receipt_schema() -> None:
@@ -67,12 +73,12 @@ def test_parse_nested_gensyn_receipt_schema() -> None:
                 ),
                 "parameters": {"max_new_tokens": 20, "seed": 12345},
                 "parameters_hash": (
-                    "sha256:aa7a670e1aa07f97222c3c60de68627c45da4f5770b4cde05c1d3e11d298f6fe"
+                    "sha256:05553f56b3c7f21e35d9e67dae7f1be91af0dee290d9f024e50a41b87cc8a25d"
                 ),
             },
             "output": {
                 "tokens_hash": (
-                    "sha256:665594e63b02eaab48328ad4ca4f1008338f666ad6404d62e41e661109a0b610"
+                    "sha256:9599915bd8cd62b6b42e6c37b5b681a76991a7c5be1fde9971278ce65b99d550"
                 ),
                 "token_count": 20,
                 "finish_reason": "max_length",
@@ -81,7 +87,7 @@ def test_parse_nested_gensyn_receipt_schema() -> None:
             "execution": {"device_type": "cpu", "device_name": "x86_64"},
             "hashes": {
                 "receipt_hash": (
-                    "sha256:36ae72fccc5e179a6986d0af614546170ed60be0d0ab953e05978a10c7a9dcb3"
+                    "sha256:984f2f2e031e39d37afe04060db89515026bf4f464bcba770ec46cedddb36f18"
                 )
             },
         }
@@ -116,12 +122,12 @@ def test_nested_gensyn_receipt_passes_validation() -> None:
                 ),
                 "parameters": {"max_new_tokens": 20, "seed": 12345},
                 "parameters_hash": (
-                    "sha256:aa7a670e1aa07f97222c3c60de68627c45da4f5770b4cde05c1d3e11d298f6fe"
+                    "sha256:05553f56b3c7f21e35d9e67dae7f1be91af0dee290d9f024e50a41b87cc8a25d"
                 ),
             },
             "output": {
                 "tokens_hash": (
-                    "sha256:665594e63b02eaab48328ad4ca4f1008338f666ad6404d62e41e661109a0b610"
+                    "sha256:9599915bd8cd62b6b42e6c37b5b681a76991a7c5be1fde9971278ce65b99d550"
                 ),
                 "token_count": 20,
                 "finish_reason": "max_length",
@@ -130,7 +136,7 @@ def test_nested_gensyn_receipt_passes_validation() -> None:
             "execution": {"device_type": "cpu", "device_name": "x86_64"},
             "hashes": {
                 "receipt_hash": (
-                    "sha256:36ae72fccc5e179a6986d0af614546170ed60be0d0ab953e05978a10c7a9dcb3"
+                    "sha256:984f2f2e031e39d37afe04060db89515026bf4f464bcba770ec46cedddb36f18"
                 )
             },
         }
@@ -140,6 +146,78 @@ def test_nested_gensyn_receipt_passes_validation() -> None:
 
     assert result.matches is True
     assert result.expected_receipt_hash == receipt.receipt_hash
+
+
+def test_flat_receipt_rejects_unknown_claim_fields() -> None:
+    body = parse_ree_receipt(FIXTURES / "valid_receipt.json").model_dump(mode="json")
+    body["production"] = True
+
+    with pytest.raises(ValueError, match="Extra inputs are not permitted"):
+        parse_ree_receipt(body)
+
+
+def test_nested_receipt_rejects_unknown_claim_fields() -> None:
+    body = {
+        "model": {"production": True},
+        "input": {},
+        "output": {},
+        "execution": {},
+        "hashes": {},
+    }
+
+    with pytest.raises(ValueError, match="unknown model fields.*production"):
+        parse_ree_receipt(body)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "reason"),
+    (
+        ("prompt", "attacker-substituted prompt", "prompt_hash_mismatch"),
+        (
+            "parameters",
+            {"max_new_tokens": 999},
+            "parameters_hash_mismatch",
+        ),
+        ("text_output", "attacker-substituted output", "tokens_hash_mismatch"),
+    ),
+)
+def test_receipt_content_tampering_fails_component_validation(
+    field: str,
+    replacement: object,
+    reason: str,
+) -> None:
+    receipt = parse_ree_receipt(FIXTURES / "valid_receipt.json")
+    tampered = receipt.model_copy(update={field: replacement})
+
+    result = validate_ree_receipt(tampered)
+
+    assert result.receipt_hash_matches is True
+    assert result.matches is False
+    assert reason in result.failure_reasons
+
+
+def test_unknown_component_hash_algorithm_fails_closed() -> None:
+    receipt = parse_ree_receipt(FIXTURES / "valid_receipt.json")
+    unsupported_prompt_hash = "blake3:" + "11" * 32
+    tampered = receipt.model_copy(
+        update={
+            "prompt_hash": unsupported_prompt_hash,
+            "receipt_hash": compute_receipt_hash(
+                commit_hash=receipt.commit_hash,
+                config_hash=receipt.config_hash,
+                prompt_hash=unsupported_prompt_hash,
+                parameters_hash=receipt.parameters_hash,
+                tokens_hash=receipt.tokens_hash,
+            ),
+        }
+    )
+
+    result = validate_ree_receipt(tampered)
+
+    assert result.receipt_hash_matches is True
+    assert result.matches is False
+    assert result.unsupported_component_hashes == ("prompt",)
+    assert "prompt_hash_algorithm_unsupported" in result.failure_reasons
 
 
 def test_invalid_ree_receipt_fails_validation() -> None:

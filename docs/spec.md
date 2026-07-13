@@ -177,10 +177,12 @@ Acceptance criteria:
 
 - A completed job exposes a structured verification bundle through
   `GET /jobs/{job_id}/verify`.
-- Verification recomputes specialist output hashes where the stored payload is
-  available.
+- Verification requires a one-to-one match between stored attestations and
+  specialist payloads on `(job_id, node_role, peer_id)`, rejects duplicate,
+  missing, or unmatched contexts, and recomputes every matched output hash.
 - Verification checks verifier attestation signatures when signer metadata is
-  configured.
+  configured; unknown attestation fields are rejected instead of being dropped
+  before signature verification.
 - Verification checks REE receipt consistency when receipt content is available
   and distinguishes `present`, `parsed`, `validated`, and `verified`.
 - Verification checks recorded Gensyn Testnet transaction hashes through RPC or

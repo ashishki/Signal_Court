@@ -1,0 +1,58 @@
+name: Proof verification defect
+description: Report a reproducibility, signature, receipt, provenance, or claim-boundary defect.
+title: "proof: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use public fixtures only. Do not attach keys, credentials, ignored runtime artifacts, private data, or funded-wallet material.
+  - type: input
+    id: revision
+    attributes:
+      label: Revision or tag
+      description: Exact commit SHA or evidence tag candidate.
+      placeholder: 40-character commit SHA
+    validations:
+      required: true
+  - type: input
+    id: content_address
+    attributes:
+      label: Evidence content address
+      description: The sha256 content address printed by the verifier.
+      placeholder: sha256:...
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Verification surface
+      options:
+        - Bundle or manifest checksum
+        - Specialist signature
+        - Verifier attestation
+        - Receipt claim
+        - Routing provenance
+        - Historical testnet reference
+        - Claim boundary or documentation
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the exact credential-free command and sanitized output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_observed
+    attributes:
+      label: Expected and observed result
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, private data, ignored runtime artifacts, and funded-wallet material.
+          required: true

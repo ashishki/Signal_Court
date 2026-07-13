@@ -9,6 +9,7 @@ from eth_utils import to_checksum_address
 
 from app.identity.hashing import canonical_json_hash
 from app.identity.signing import recover_execution_signer
+from app.ree.claims import check_receipt_claim
 from app.schemas.contracts import SignedAgentExecution, SpecialistResponse, TaskSpec
 
 
@@ -54,6 +55,7 @@ def detect_tampering(execution: SignedAgentExecution) -> DetectionResult:
     checks.append(_check_identity_role(execution))
     checks.append(_check_identity_peer_id(execution))
     checks.append(_check_signer_matches_identity(execution))
+    checks.append(_check_response_wallet_matches_identity(execution))
     checks.append(_check_signature_recovers_signer(execution))
     checks.append(_check_receipt_consistency(execution))
     checks.append(_check_signature_algorithm(execution))
@@ -122,6 +124,29 @@ def _check_signer_matches_identity(execution: SignedAgentExecution) -> CheckResu
     )
 
 
+def _check_response_wallet_matches_identity(
+    execution: SignedAgentExecution,
+) -> CheckResult:
+    identity_wallet = to_checksum_address(execution.identity.wallet)
+    response_wallet = execution.response.agent_wallet
+    matches = response_wallet is None or (
+        to_checksum_address(response_wallet) == identity_wallet
+    )
+    return CheckResult(
+        name="response_wallet_matches_identity",
+        passed=matches,
+        detail=(
+            "response.agent_wallet must be absent or equal the signed identity wallet"
+        ),
+        expected=identity_wallet,
+        observed=(
+            to_checksum_address(response_wallet)
+            if response_wallet is not None
+            else "not_declared"
+        ),
+    )
+
+
 def _check_signature_recovers_signer(execution: SignedAgentExecution) -> CheckResult:
     claimed = execution.signature.signer
     try:
@@ -144,33 +169,17 @@ def _check_signature_recovers_signer(execution: SignedAgentExecution) -> CheckRe
 
 
 def _check_receipt_consistency(execution: SignedAgentExecution) -> CheckResult:
-    response = execution.response
-    status = (response.receipt_status or "").lower()
-    has_body = response.ree_receipt_body is not None
-    has_hash = bool(response.ree_receipt_hash)
-
-    if status in {"verified", "validated"} and not has_body:
-        return CheckResult(
-            name="receipt_consistency",
-            passed=False,
-            detail=f"receipt_status={status!r} requires ree_receipt_body",
-            expected="ree_receipt_body present",
-            observed="ree_receipt_body=None",
-        )
-    if status == "parsed" and not has_hash:
-        return CheckResult(
-            name="receipt_consistency",
-            passed=False,
-            detail="receipt_status='parsed' requires ree_receipt_hash",
-            expected="ree_receipt_hash present",
-            observed="ree_receipt_hash=None",
-        )
+    check = check_receipt_claim(execution.response)
     return CheckResult(
         name="receipt_consistency",
-        passed=True,
-        detail="receipt_status is consistent with attached receipt material",
-        expected=None,
-        observed=status or "missing",
+        passed=check.valid,
+        detail=(
+            "receipt claim material passed fail-closed validation"
+            if check.valid
+            else f"receipt claim failed: {','.join(check.reasons)}"
+        ),
+        expected="valid embedded evidence for the claimed receipt status",
+        observed=check.status,
     )
 
 

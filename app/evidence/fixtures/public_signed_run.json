@@ -1,0 +1,100 @@
+{
+  "schema": "signal-count.public-signed-run-fixture/v1",
+  "task": {
+    "job_id": "public-fixture-job-001",
+    "thesis": "ETH upside depends on stable liquidity, but the fixture thesis fails if support breaks while volatility expands.",
+    "asset": "ETH",
+    "horizon_days": 30
+  },
+  "topology": {
+    "mode": "fixture-selection-only",
+    "local_peer_id": "peer-coordinator-public-fixture",
+    "peers": [
+      "peer-regime-public-fixture",
+      "peer-narrative-public-fixture",
+      "peer-risk-public-fixture"
+    ]
+  },
+  "roles": [
+    {
+      "role": "regime",
+      "service_name": "regime_analyst",
+      "candidates": [
+        "peer-regime-not-in-topology",
+        "peer-regime-public-fixture"
+      ],
+      "response": {
+        "summary": "The synthetic regime snapshot keeps liquidity constructive while volatility remains high enough to preserve downside risk.",
+        "scenario_view": {"bull": 0.38, "base": 0.42, "bear": 0.20},
+        "signals": [
+          "fixture signal: liquidity remains stable",
+          "fixture signal: volatility remains elevated"
+        ],
+        "risks": ["fixture risk: liquidity can reverse"],
+        "confidence": 0.64,
+        "citations": ["fixture://signal-count/regime/v1"],
+        "timestamp": "2026-07-13T00:00:00Z"
+      }
+    },
+    {
+      "role": "narrative",
+      "service_name": "narrative_analyst",
+      "candidates": [
+        "peer-narrative-not-in-topology",
+        "peer-narrative-public-fixture"
+      ],
+      "response": {
+        "summary": "The synthetic narrative remains conditional: fixture headlines support upside only while flows and liquidity agree.",
+        "scenario_view": {"bull": 0.40, "base": 0.40, "bear": 0.20},
+        "signals": [
+          "fixture catalyst: improving flow context",
+          "fixture uncertainty: headline context is intentionally bounded"
+        ],
+        "risks": ["fixture risk: narrative momentum can reverse"],
+        "confidence": 0.61,
+        "citations": ["fixture://signal-count/narrative/v1"],
+        "timestamp": "2026-07-13T00:00:00Z"
+      }
+    },
+    {
+      "role": "risk",
+      "service_name": "risk_analyst",
+      "candidates": [
+        "peer-risk-not-in-topology",
+        "peer-risk-public-fixture"
+      ],
+      "response": {
+        "summary": "The synthetic counter-thesis is that weaker flows, tighter liquidity, and a support break invalidate the fixture upside case.",
+        "scenario_view": {"bull": 0.24, "base": 0.36, "bear": 0.40},
+        "signals": [
+          "counter_thesis: the upside catalyst may already be priced in",
+          "invalidation: support breaks while volatility expands"
+        ],
+        "risks": [
+          "fixture risk: liquidity conditions tighten",
+          "fixture risk: support fails"
+        ],
+        "confidence": 0.69,
+        "citations": ["fixture://signal-count/risk/v1"],
+        "timestamp": "2026-07-13T00:00:00Z"
+      }
+    }
+  ],
+  "historical_testnet_references": [
+    {
+      "contract": "SignalAgentRegistry",
+      "address": "0x9Aa7E223B5bd2384cea38F0d2464Aa6cbB0146A9",
+      "deployment_transaction": "0x14efd87d470b9720316350b24af1a3a2f84db503fa902ea1019db02809e1a510"
+    },
+    {
+      "contract": "SignalTaskRegistry",
+      "address": "0x7b0ED22C93eBdF6Be5c3f6D6fC8F7B51fdFBd861",
+      "deployment_transaction": "0x93d2181c7206641a212aab7a62b56c0df6b0815bd0c63243a21652b35183a2eb"
+    },
+    {
+      "contract": "SignalReceiptRegistry",
+      "address": "0xb67E197538F2cF9d398c28ec85d4f99fb2e668cf",
+      "deployment_transaction": "0x3faa4376dc97f5e656a65f96d999e38e49f01ad85357b910dd3f4c3a5c78ca16"
+    }
+  ]
+}

@@ -31,7 +31,9 @@ def test_chain_analyst_response_is_deterministic() -> None:
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
     assert canonical_json_hash(first) == canonical_json_hash(second)
     assert first.node_role == "chain_analyst"
-    assert first.receipt_status == "verified"
+    assert first.receipt_status is None
+    assert first.ree_receipt_hash is None
+    assert any(item.startswith("metrics_hash:") for item in first.citations)
 
 
 def test_pinned_block_changes_metrics() -> None:

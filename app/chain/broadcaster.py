@@ -283,6 +283,7 @@ def _accepted_reputation_updates(
         for update in raw_updates
         if isinstance(update, dict)
         and update.get("verifier_status") == "accepted"
+        and update.get("credit_eligible") is True
         and update.get("agent_wallet")
         and float(update.get("verifier_score", 0.0)) > 0.0
         and float(update.get("reputation_points", 0.0)) > 0.0

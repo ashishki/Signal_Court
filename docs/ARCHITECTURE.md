@@ -44,8 +44,8 @@ passive appendix:
 Completed job
   |
 Verification endpoint / UI action
-  |-- recompute specialist output hashes
-  |-- check verifier attestations/signatures
+  |-- bijectively bind specialist payloads to attestations and recompute hashes
+  |-- reject unknown attestation fields and check verifier signatures
   |-- validate or verify REE receipts according to policy
   |-- check Gensyn Testnet tx presence
   |-- compare indexed-chain projection
@@ -75,9 +75,12 @@ receipt exists, and which transaction backs the claim.
 
 `scripts/run_full_battle_demo.sh` is the one-command presentation path. It
 starts the local two-node AXL mesh, MCP router, specialist services, coordinator
-app, REE-enabled risk path, Gensyn Testnet receipt writes, capped native
-test-ETH payouts, and one-shot indexer. It prints sectioned terminal logs for
-video capture and writes a plain summary to `.runtime/full-battle/summary.txt`.
+app, REE-enabled risk path, Gensyn Testnet task/contribution receipt writes, and
+one-shot indexer. Normal AXL dispatch currently returns unsigned
+`SpecialistResponse` objects, so the script disables reputation transactions
+and native test-ETH payouts and treats either one as an error. It prints
+sectioned terminal logs for video capture and writes a plain summary to
+`.runtime/full-battle/summary.txt`.
 
 The web viewer remains available at `http://127.0.0.1:8004` after the run so
 the proof console can be captured from the completed job state.
@@ -88,7 +91,7 @@ the proof console can be captured from the completed job state.
 | --- | --- | --- |
 | API | `app/api/` | Health, job submission, demo page routes, proof-console evidence display |
 | AXL client | `app/axl/` | Local bridge calls, peer/service addressing, topology fetch |
-| Chain integration | `app/chain/` | Gensyn Testnet transaction builders, receipt/reputation metadata, and capped native test payouts |
+| Chain integration | `app/chain/` | Gensyn Testnet task/contribution runtime writes plus isolated reputation/payout transaction helpers |
 | Coordinator | `app/coordinator/` | Fetch context, fan out specialist calls, collect responses |
 | Evaluation | `app/evaluation/` | Verifier scoring, attestation hashing, wallet attribution, and reputation projection |
 | Event indexer | `app/indexer/` | Gensyn Testnet event decoding and local indexed-chain projections |
@@ -104,8 +107,8 @@ the proof console can be captured from the completed job state.
 
 ## AXL Integration Boundary
 
-The coordinator does not call specialist hosts directly in the production path.
-It resolves a specialist role to a configured AXL peer ID and service name, then
+The configured coordinator path does not call specialist hosts directly. It
+resolves a specialist role to a configured AXL peer ID and service name, then
 builds an MCP route through the local AXL bridge:
 
 ```text
@@ -118,9 +121,9 @@ each specialist took.
 
 Payloads crossing this boundary are transport-safe JSON data only. Runtime
 objects such as Python LLM client instances stay inside the receiving process.
-This matters because the live AXL path serializes requests over HTTP; an
+This matters because the configured AXL path serializes requests over HTTP; an
 in-process object in the payload would work only in a fake local workflow and
-fail through the real bridge.
+fail through the HTTP bridge.
 
 ## Event Indexer
 
@@ -146,7 +149,7 @@ repairs a configured recent window if a stored block hash changes. Replay is
 idempotent. Full archival rollback beyond the configured repair window is not
 claimed.
 
-The single-node live verification proves:
+A freshly captured single-node run can provide evidence for:
 
 - coordinator -> local AXL bridge
 - local AXL bridge -> MCP router
@@ -168,10 +171,10 @@ regime / narrative / risk specialist services
 ```
 
 In that mode, `AXL_LOCAL_BASE_URL` points to Node A while role peer IDs point to
-Node B. The topology snapshot shows both public keys, and dispatch targets use
-Node B's public key. This is a real local AXL peer separation. It should still
-be described as a same-machine mesh unless the nodes are deployed on separate
-machines.
+Node B. A successful run should record both public keys in its topology evidence
+and use Node B's public key in its dispatch targets. That run is evidence of
+same-machine peer separation only when its process logs and topology artifact
+are retained; it is not evidence of a remote deployment.
 
 ## Specialist Node Server
 

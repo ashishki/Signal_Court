@@ -19,6 +19,7 @@ def test_valid_contribution_increases_reputation(tmp_path: Path) -> None:
     assert updates[0].node_role == "regime"
     assert updates[0].peer_id == "peer-regime-test"
     assert updates[0].agent_wallet == "0xFCAd0B19bB29D4674531d6f115237E16AfCE377c"
+    assert updates[0].credit_eligible is True
     assert updates[0].reputation_points == 82.0
     assert updates[0].reason == "verifier_score_credit"
 
@@ -42,6 +43,7 @@ def test_invalid_contribution_gets_no_credit(tmp_path: Path) -> None:
     updates = build_reputation_updates([attestation])
 
     assert updates[0].reputation_points == 0.0
+    assert updates[0].credit_eligible is False
     assert updates[0].reason == "no_credit_for_rejected_verifier_status"
 
     leaderboard = asyncio.run(_persist_and_read_leaderboard(tmp_path, updates))
@@ -58,12 +60,44 @@ def test_invalid_contribution_gets_no_credit(tmp_path: Path) -> None:
     ]
 
 
+def test_unsigned_accepted_attestation_has_no_reputation_or_ranking_effect(
+    tmp_path: Path,
+) -> None:
+    attestation = _attestation(status="accepted", score=0.99).model_copy(
+        update={"signer": None, "agent_wallet": None}
+    )
+
+    updates = build_reputation_updates([attestation])
+
+    assert updates[0].credit_eligible is False
+    assert updates[0].verifier_score == 0.0
+    assert updates[0].reputation_points == 0.0
+    assert updates[0].reason == "no_credit_without_verified_execution_signer"
+    assert asyncio.run(_persist_and_read_leaderboard(tmp_path, updates)) == []
+
+
+def test_accepted_signer_wallet_mismatch_has_no_ranking_effect(tmp_path: Path) -> None:
+    attestation = _attestation(status="accepted", score=0.99).model_copy(
+        update={"signer": "0x00000000000000000000000000000000000000A2"}
+    )
+
+    updates = build_reputation_updates([attestation])
+
+    assert updates[0].credit_eligible is False
+    assert updates[0].verifier_score == 0.0
+    assert updates[0].reputation_points == 0.0
+    assert updates[0].reason == "no_credit_for_signer_wallet_mismatch"
+    assert asyncio.run(_persist_and_read_leaderboard(tmp_path, updates)) == []
+
+
 def _attestation(*, status: str, score: float) -> VerificationAttestation:
     return VerificationAttestation(
         job_id="job-reputation-1",
         node_role="regime",
         peer_id="peer-regime-test",
         agent_wallet="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+        signer="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+        output_hash="0x" + "11" * 32,
         status=status,
         score=score,
         reasons=["test"],

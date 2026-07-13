@@ -5,6 +5,12 @@ Gensyn track.
 
 Status: research reference. The project is preserved as a proof-console artifact for Entropy Core and trader intelligence design. Roadmap: `docs/PROJECT_PLAN.md`.
 
+Public evidence status: the repository now tracks a credential-free,
+deterministic fixture bundle for routing selection, EIP-191 specialist
+signatures, signed verifier attestations, and local REE receipt consistency.
+Start with [`docs/evidence/README.md`](docs/evidence/README.md). This is an
+evidence-tag candidate, not a live-network or production release.
+
 Do not trust the memo. Verify every specialist behind it.
 
 Signal Count turns one market thesis into an auditable risk memo with visible
@@ -16,10 +22,10 @@ proof layers:
 - REE receipt path: whether the risk inference path has reproducible evidence.
 - Deterministic chain analyst: an optional specialist backed by pinned chain
   events instead of an LLM sample.
-- Reputation-weighted payout ledger: how accepted verifier scores affect
-  capped testnet payout evidence.
-- Gensyn Testnet receipts: whether task, contribution, and reputation events
-  were anchored outside the app.
+- Offline reputation/payout simulation: how a deterministic policy would map
+  verifier scores to capped testnet amounts; this is not a runtime transfer.
+- Gensyn Testnet receipts: whether task and contribution events were anchored
+  outside the app when chain writing was configured.
 
 Signal Count is not a trading bot. A user submits one market thesis, an asset,
 and a time horizon. A coordinator dispatches structured analysis requests to
@@ -27,9 +33,9 @@ specialist services through AXL, collects their responses, and produces an
 auditable risk memo with scenarios, catalysts, risks, invalidation triggers,
 and provenance.
 
-Each completed run exposes the AXL peer, wallet, output hash, verifier
-attestation, REE evidence when enabled, and Gensyn Testnet receipts when
-configured.
+Each completed run exposes its AXL peer, output hash, verifier attestation, REE
+evidence when enabled, and Gensyn Testnet receipts when configured. Wallet
+credit is shown only for a cryptographically verified signed execution.
 
 The product claim is simple: a polished memo is not enough. The useful artifact
 is the proof trail behind the memo.
@@ -43,10 +49,11 @@ is the proof trail behind the memo.
 - Scores specialist outputs through a verifier and records deterministic
   attestation hashes.
 - Detects tampered signed execution envelopes for proof-console evidence.
-- Can generate reputation-weighted native test payout ledgers.
+- Can generate deterministic offline reputation/payout simulation ledgers;
+  these artifacts do not execute a transfer.
 - Can attach a real Gensyn REE receipt to the risk specialist path.
-- Can record task, contribution, and reputation receipt metadata on Gensyn
-  Testnet when chain writing is configured.
+- Can record task and contribution receipt metadata on Gensyn Testnet when
+  chain writing is configured.
 - Produces a structured memo instead of a generic chat response.
 - Renders an operator proof console with AXL peer, wallet, output hash, REE
   status, explorer links, indexed chain facts, and a source-linked memo.
@@ -108,7 +115,7 @@ Signed envelope checks (optional)
   |
 Verifier
   |
-Reputation payout ledger
+Local reputation projection
   |
 Memo synthesis + provenance ledger
 ```
@@ -128,10 +135,10 @@ flowchart LR
     N --> G
     G --> I[Risk memo]
     G --> J[Hashes and attestations]
-    G --> P[Reputation payout ledger]
+    G --> P[Local reputation projection]
     J --> K[Gensyn Testnet receipts]
-    P --> K
     K --> L[Local chain indexer]
+    G -. offline helper only .-> Q[Payout policy simulation]
     T[Signed envelope tamper checks] -. evidence artifact .-> M
     I --> M[Proof console]
     L --> M
@@ -181,8 +188,40 @@ tests/              Unit and integration tests
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt -e .
+python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt
+python -m pip install --no-deps --no-build-isolation -e .
 ```
+
+`requirements-dev.txt` is the human-maintained lock input. The generated
+`requirements-lock.txt` is the installation source: every Python distribution
+is version- and SHA-256-pinned, including pip and the build toolchain.
+
+## Five-minute Public Evidence Path
+
+From a clean checkout:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt
+python -m pip install --no-deps --no-build-isolation -e .
+python -m pip check
+python scripts/build_public_evidence.py --verify evidence/public-fixture-v1
+```
+
+Expected evidence content address:
+
+```text
+sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e
+```
+
+The command regenerates the artifact in memory and compares the exact bundle
+file set, every tracked byte, and source checksums. It directly composes the
+repository's capability-selection, signing, receipt-check, and
+verifier-attestation modules; it is not a replay of the normal coordinator
+transport. It performs no AXL dispatch, model inference, RPC lookup, or testnet
+write and requires no credentials. All task data, responses, identities, and
+signing keys are public synthetic fixtures.
 
 ## Run
 
@@ -270,17 +309,16 @@ topology health and verifier/reputation metadata when available. If the selected
 peer fails, it retries the next candidate and records the fallback chain in
 `Run Evidence`.
 
-### Verified Local AXL Run
+### Historical Local AXL Operator Note
 
-The current implementation has been verified against a locally running Gensyn
-AXL node, MCP router, and three specialist services. The coordinator submitted a
-job through:
+Earlier operator notes report a local Gensyn AXL node, MCP router, and three
+specialist services submitting a coordinator job through:
 
 ```text
 /mcp/{axl_public_key}/{service_name}
 ```
 
-and recorded all three roles as completed with `transport=axl-mcp`:
+and recording all three roles as completed with `transport=axl-mcp`:
 
 ```text
 regime -> regime_analyst
@@ -288,9 +326,9 @@ narrative -> narrative_analyst
 risk -> risk_analyst
 ```
 
-This verifies the local AXL bridge plus MCP router path. It should not be
-overstated as a multi-machine remote mesh unless separate AXL nodes with
-distinct public keys are also running.
+No raw artifact for that run is tracked in the clean repository, and the public
+fixture does not replay it. Treat this section as `present_only` historical
+operator context, not current AXL, remote-mesh, user, or production evidence.
 
 ### Multi-Peer AXL Mesh Demo
 
@@ -343,7 +381,7 @@ identities without claiming a remote multi-machine deployment.
 
 ### Full Battle Demo Script
 
-For the complete proof path, use the full battle runner:
+For the live transport path, use the full battle runner:
 
 ```bash
 scripts/run_full_battle_demo.sh
@@ -351,8 +389,11 @@ scripts/run_full_battle_demo.sh
 
 It starts the local two-node AXL mesh, MCP router, three specialist services,
 the coordinator app, REE-backed risk execution, Gensyn Testnet receipt writes,
-tiny capped native test-ETH payouts, a one-shot chain indexer, and the web
-viewer. Terminal output is formatted into clear demo sections while
+one-shot chain indexing, and the web viewer. The current AXL specialist
+transport returns unsigned `SpecialistResponse` objects. Consequently, normal
+runs are not credit-eligible and cannot produce a reputation transaction or
+native test-ETH payout; the script explicitly disables both paths and fails if
+either appears. Terminal output is formatted into clear demo sections while
 `.runtime/full-battle/summary.txt` remains plain text for evidence sharing.
 
 Default viewer URL:
@@ -367,19 +408,15 @@ Stop the demo processes with:
 scripts/stop_full_battle_demo.sh
 ```
 
-Current verified full-battle evidence from the May 2, 2026 recording run:
+Historical operator notes from a May 2, 2026 full-battle recording mentioned a
+job, runtime counts, REE output, and reputation/payout receipts. The ignored raw
+runtime directory is absent from a clean checkout, so none of those details is
+reproducible evidence here. In particular, they do not establish that the
+current unsigned coordinator path executed a reputation transaction or payout.
 
-- Job ID: `3beec5c8-3a95-4058-8962-9408fb951465`.
-- Runtime: `773s` end to end.
-- Live job completed at `+760s`; the remaining time was one-shot indexing and
-  evidence summary generation.
-- Roles completed: `regime`, `narrative`, `risk`.
-- REE receipt status: `validated`.
-- Chain receipts: task, three contributions, and three reputation/test payout
-  receipts.
-- Native test payout size: `1000000000 wei` per role.
-- Indexed projection after replay: `tasks=9`, `contributions=23`,
-  `verifications=0`, `reputation=23`.
+Treat those older notes as `present_only`; the tracked public fixture does not
+reproduce or upgrade them into release evidence. Do not cite them as current
+network, user, production, economic, or security proof.
 
 ## Proof Console UI
 
@@ -407,37 +444,42 @@ AXL dispatch evidence
   -> specialist output hash
   -> optional deterministic chain analyst snapshot
   -> verifier attestation and score
-  -> reputation-weighted payout ledger
+  -> zero wallet credit for an unsigned normal-runtime response
   -> optional REE receipt hash/status
-  -> optional Gensyn Testnet receipt/reputation tx
+  -> optional Gensyn Testnet task/contribution receipt tx
   -> indexed chain-event projection
 ```
 
-What is verified locally:
+Offline only: verifier-score scenarios can be passed through the payout policy
+simulation. That helper does not execute or prove a transaction.
 
-- The live AXL path reaches specialist `/mcp` services through the local AXL
-  bridge and MCP router.
-- The same-machine two-node mesh demonstrates distinct AXL peer identities.
-- Signed execution tamper checks catch changed payloads, signer swaps, forged
-  signatures, role substitutions, and receipt overclaims.
-- The deterministic chain analyst can replay the same pinned fixture into the
-  same output hash.
-- Reputation payout policy tests cover score-driven reputation movement,
-  slashing, cumulative payouts, and JSON-stable ledgers.
-- REE receipt parsing and hash validation are covered by tests, and the real
-  REE E2E script has been run against Gensyn REE.
-- Gensyn Testnet task/contribution/reputation transaction helpers and receipt
-  metadata are covered by tests; previously broadcast deployment and live job
-  receipts are documented in `docs/gensyn-contracts.md`.
-- The event indexer can rebuild task, contribution, verification,
-  finalization, and reputation projections from indexed chain logs.
+What the tracked public fixture verifies locally:
+
+- The capability registry selects three fixture peers from a fixed topology and
+  records the intended `/mcp/{peer}/{service}` targets without dispatching.
+- Three specialist response envelopes canonical-hash, recover their fixture
+  EIP-191 signers, and bind task, role, peer, wallet, and output.
+- Three verifier attestations canonical-hash, carry EIP-191 signatures, and
+  recover the fixture verifier wallet.
+- The synthetic risk receipt binds prompt, canonical parameters, and text output
+  to supported component hashes and recomputes the master commitment;
+  `validated` means only those local consistency checks.
+- Each historical contract/address/deployment-transaction/explorer tuple must
+  match one exact structured row in `docs/gensyn-contracts.md`; the fixture does
+  not query RPC or confirm it.
+
+The broader live AXL, REE, testnet-write, and indexer paths remain in the
+codebase and tests, but they are outside this credential-free evidence claim.
+Reputation transaction and payout helpers also remain covered as isolated
+components; they are unavailable from the normal unsigned coordinator path.
 
 What is not claimed:
 
 - No remote multi-machine AXL deployment unless the mesh scripts are run on
   separate hosts.
 - No ERC20, USDC, stablecoin, or real-money reward flow.
-- Native test-ETH payout evidence is opt-in, capped, tiny, and only for testnet.
+- No current native test-ETH payout or reputation-transaction evidence is
+  claimed; normal runtime responses are unsigned and receive zero wallet credit.
 - No full archival chain reorg rollback beyond the configured repair window.
 - Market/news inputs in the demo are fixture-labelled, not live market data.
 - Signal Count is decision support, not trading advice or price prediction.
@@ -450,13 +492,10 @@ ruff check app/ tests/
 ruff format --check app/ tests/
 ```
 
-Current local verification:
-
-```text
-159 passed, 1 skipped in socket-restricted sandbox
-ruff check .: pass
-ruff format --check .: pass
-```
+CI installs the locked dependency graph, runs `pip check`, lint/format checks,
+the complete test suite, and exact public-bundle reproduction. A green check is
+code/evidence verification; it is not evidence of external use or production
+operation.
 
 ## Submission Notes
 

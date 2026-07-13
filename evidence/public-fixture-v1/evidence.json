@@ -1,0 +1,470 @@
+{
+  "claim_boundaries": [
+    "All thesis, topology, responses, identities, and keys are public synthetic fixtures.",
+    "Routing selection used the repository application capability registry; no AXL dispatch or live network call ran.",
+    "The REE-shaped receipt is synthetic; validated binds its prompt, parameters, and text output to component hashes and the component hashes to the master commitment, but is not model inference or external re-execution.",
+    "Commit/config source bytes and non-content receipt metadata are not locally reconstructed; the signed fixture envelope binds the serialized response, not a real REE identity.",
+    "No testnet transaction was submitted or queried; deployment transactions are historical documentation references only.",
+    "This artifact is not evidence of users, production operation, trading performance, economic security, or protocol security."
+  ],
+  "historical_testnet_provenance": {
+    "chain_id": 685685,
+    "network": "Gensyn Testnet",
+    "network_lookup_performed": false,
+    "references": [
+      {
+        "address": "0x9Aa7E223B5bd2384cea38F0d2464Aa6cbB0146A9",
+        "contract": "SignalAgentRegistry",
+        "deployment_transaction": "0x14efd87d470b9720316350b24af1a3a2f84db503fa902ea1019db02809e1a510",
+        "explorer_url": "https://gensyn-testnet.explorer.alchemy.com/tx/0x14efd87d470b9720316350b24af1a3a2f84db503fa902ea1019db02809e1a510",
+        "rpc_receipt_reverified": false,
+        "status": "documented_historical_reference"
+      },
+      {
+        "address": "0x7b0ED22C93eBdF6Be5c3f6D6fC8F7B51fdFBd861",
+        "contract": "SignalTaskRegistry",
+        "deployment_transaction": "0x93d2181c7206641a212aab7a62b56c0df6b0815bd0c63243a21652b35183a2eb",
+        "explorer_url": "https://gensyn-testnet.explorer.alchemy.com/tx/0x93d2181c7206641a212aab7a62b56c0df6b0815bd0c63243a21652b35183a2eb",
+        "rpc_receipt_reverified": false,
+        "status": "documented_historical_reference"
+      },
+      {
+        "address": "0xb67E197538F2cF9d398c28ec85d4f99fb2e668cf",
+        "contract": "SignalReceiptRegistry",
+        "deployment_transaction": "0x3faa4376dc97f5e656a65f96d999e38e49f01ad85357b910dd3f4c3a5c78ca16",
+        "explorer_url": "https://gensyn-testnet.explorer.alchemy.com/tx/0x3faa4376dc97f5e656a65f96d999e38e49f01ad85357b910dd3f4c3a5c78ca16",
+        "rpc_receipt_reverified": false,
+        "status": "documented_historical_reference"
+      }
+    ],
+    "source": "docs/gensyn-contracts.md",
+    "source_sha256": "8cbc10eeb75d3d714c22599b9fa92adc370c0f0cc2b1d1752985223f29b6a6c1"
+  },
+  "mode": "credential-free-deterministic-fixture",
+  "receipt_claim_checks": [
+    {
+      "declared_hash": "",
+      "embedded_hash": "",
+      "parameters_hash_matches": null,
+      "prompt_hash_matches": null,
+      "reasons": [],
+      "receipt_hash_matches": null,
+      "recomputed_hash": "",
+      "role": "regime",
+      "status": "not_claimed",
+      "tokens_hash_matches": null,
+      "valid": true
+    },
+    {
+      "declared_hash": "",
+      "embedded_hash": "",
+      "parameters_hash_matches": null,
+      "prompt_hash_matches": null,
+      "reasons": [],
+      "receipt_hash_matches": null,
+      "recomputed_hash": "",
+      "role": "narrative",
+      "status": "not_claimed",
+      "tokens_hash_matches": null,
+      "valid": true
+    },
+    {
+      "declared_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+      "embedded_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+      "parameters_hash_matches": true,
+      "prompt_hash_matches": true,
+      "reasons": [],
+      "receipt_hash_matches": true,
+      "recomputed_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+      "role": "risk",
+      "status": "validated",
+      "tokens_hash_matches": true,
+      "valid": true
+    }
+  ],
+  "reproduction": {
+    "build_command": "python scripts/build_public_evidence.py --out evidence/public-fixture-v1",
+    "credentials_required": [],
+    "dependency_lock": "requirements-lock.txt",
+    "dependency_lock_sha256": "c09006eb70aa1dda889a0744476f92100c8a4f259dd08534ee0c646b709eb3ae",
+    "install_commands": [
+      "python -m pip install --require-hashes --only-binary=:all: -r requirements-lock.txt",
+      "python -m pip install --no-deps --no-build-isolation -e ."
+    ],
+    "verify_command": "python scripts/build_public_evidence.py --verify evidence/public-fixture-v1"
+  },
+  "routing_selection": [
+    {
+      "candidates": [
+        {
+          "health": "down",
+          "peer_id": "peer-regime-not-in-topology",
+          "reputation_score": 0.0,
+          "service_name": "regime_analyst"
+        },
+        {
+          "health": "up",
+          "peer_id": "peer-regime-public-fixture",
+          "reputation_score": 0.0,
+          "service_name": "regime_analyst"
+        }
+      ],
+      "dispatch_executed": false,
+      "dispatch_target": "/mcp/peer-regime-public-fixture/regime_analyst",
+      "role": "regime",
+      "selected_peer_id": "peer-regime-public-fixture",
+      "selected_service_name": "regime_analyst",
+      "selection_reason": "capability:topology-up"
+    },
+    {
+      "candidates": [
+        {
+          "health": "down",
+          "peer_id": "peer-narrative-not-in-topology",
+          "reputation_score": 0.0,
+          "service_name": "narrative_analyst"
+        },
+        {
+          "health": "up",
+          "peer_id": "peer-narrative-public-fixture",
+          "reputation_score": 0.0,
+          "service_name": "narrative_analyst"
+        }
+      ],
+      "dispatch_executed": false,
+      "dispatch_target": "/mcp/peer-narrative-public-fixture/narrative_analyst",
+      "role": "narrative",
+      "selected_peer_id": "peer-narrative-public-fixture",
+      "selected_service_name": "narrative_analyst",
+      "selection_reason": "capability:topology-up"
+    },
+    {
+      "candidates": [
+        {
+          "health": "down",
+          "peer_id": "peer-risk-not-in-topology",
+          "reputation_score": 0.0,
+          "service_name": "risk_analyst"
+        },
+        {
+          "health": "up",
+          "peer_id": "peer-risk-public-fixture",
+          "reputation_score": 0.0,
+          "service_name": "risk_analyst"
+        }
+      ],
+      "dispatch_executed": false,
+      "dispatch_target": "/mcp/peer-risk-public-fixture/risk_analyst",
+      "role": "risk",
+      "selected_peer_id": "peer-risk-public-fixture",
+      "selected_service_name": "risk_analyst",
+      "selection_reason": "capability:topology-up"
+    }
+  ],
+  "schema": "signal-count.public-signed-run-evidence/v1",
+  "signed_executions": [
+    {
+      "identity": {
+        "peer_id": "peer-regime-public-fixture",
+        "role": "regime",
+        "wallet": "0x42171C3241725317ACC71e41DA8e9CfD96b1256b"
+      },
+      "response": {
+        "agent_wallet": "0x42171C3241725317ACC71e41DA8e9CfD96b1256b",
+        "citations": [
+          "fixture://signal-count/regime/v1"
+        ],
+        "confidence": 0.64,
+        "job_id": "public-fixture-job-001",
+        "node_role": "regime",
+        "peer_id": "peer-regime-public-fixture",
+        "receipt_status": null,
+        "ree_model_name": null,
+        "ree_prompt_hash": null,
+        "ree_receipt_body": null,
+        "ree_receipt_hash": null,
+        "ree_receipt_path": null,
+        "ree_tokens_hash": null,
+        "risks": [
+          "fixture risk: liquidity can reverse"
+        ],
+        "scenario_view": {
+          "base": 0.42,
+          "bear": 0.2,
+          "bull": 0.38
+        },
+        "signals": [
+          "fixture signal: liquidity remains stable",
+          "fixture signal: volatility remains elevated"
+        ],
+        "summary": "The synthetic regime snapshot keeps liquidity constructive while volatility remains high enough to preserve downside risk.",
+        "timestamp": "2026-07-13T00:00:00Z"
+      },
+      "signature": {
+        "algorithm": "eip191",
+        "output_hash": "0x989ec6753a931182d010822d5030d149bbc7bce99f58a816319f6da862dd223f",
+        "signature": "0x7f4a950ed3ec4f6aae330cc5d8fc33371cf33299f8c41562c357d30270ef75ae20c97e103cf633c9e7726bfb325e0b07dd515dce623368130f57d8b5266dd7781c",
+        "signer": "0x42171C3241725317ACC71e41DA8e9CfD96b1256b",
+        "task_hash": "0x5878bdec61c302efc0e4d3ea6df5ad0f8dfa09f8285c0a7e4de7c421ae289e1f"
+      },
+      "task": {
+        "asset": "ETH",
+        "horizon_days": 30,
+        "job_id": "public-fixture-job-001",
+        "thesis": "ETH upside depends on stable liquidity, but the fixture thesis fails if support breaks while volatility expands."
+      }
+    },
+    {
+      "identity": {
+        "peer_id": "peer-narrative-public-fixture",
+        "role": "narrative",
+        "wallet": "0xfC6F26Cbd8061AE6Fb2d7f0570C7C85052B92f9d"
+      },
+      "response": {
+        "agent_wallet": "0xfC6F26Cbd8061AE6Fb2d7f0570C7C85052B92f9d",
+        "citations": [
+          "fixture://signal-count/narrative/v1"
+        ],
+        "confidence": 0.61,
+        "job_id": "public-fixture-job-001",
+        "node_role": "narrative",
+        "peer_id": "peer-narrative-public-fixture",
+        "receipt_status": null,
+        "ree_model_name": null,
+        "ree_prompt_hash": null,
+        "ree_receipt_body": null,
+        "ree_receipt_hash": null,
+        "ree_receipt_path": null,
+        "ree_tokens_hash": null,
+        "risks": [
+          "fixture risk: narrative momentum can reverse"
+        ],
+        "scenario_view": {
+          "base": 0.4,
+          "bear": 0.2,
+          "bull": 0.4
+        },
+        "signals": [
+          "fixture catalyst: improving flow context",
+          "fixture uncertainty: headline context is intentionally bounded"
+        ],
+        "summary": "The synthetic narrative remains conditional: fixture headlines support upside only while flows and liquidity agree.",
+        "timestamp": "2026-07-13T00:00:00Z"
+      },
+      "signature": {
+        "algorithm": "eip191",
+        "output_hash": "0xd05712864f730f40b927ae46404aecb0bfa1b058c770436768ce2fdd64fd48ab",
+        "signature": "0xf01dbe7571296677afc27976c6790a65f72081af9861faacfb2254285b23b8cd6d2c7a7462dbe241a94eb4b709bc4ed50b15769e43b8b2e9c93ecd31042b4d2b1c",
+        "signer": "0xfC6F26Cbd8061AE6Fb2d7f0570C7C85052B92f9d",
+        "task_hash": "0x5878bdec61c302efc0e4d3ea6df5ad0f8dfa09f8285c0a7e4de7c421ae289e1f"
+      },
+      "task": {
+        "asset": "ETH",
+        "horizon_days": 30,
+        "job_id": "public-fixture-job-001",
+        "thesis": "ETH upside depends on stable liquidity, but the fixture thesis fails if support breaks while volatility expands."
+      }
+    },
+    {
+      "identity": {
+        "peer_id": "peer-risk-public-fixture",
+        "role": "risk",
+        "wallet": "0xDf88330BfFD169144c2c1D00177332E610CeDA54"
+      },
+      "response": {
+        "agent_wallet": "0xDf88330BfFD169144c2c1D00177332E610CeDA54",
+        "citations": [
+          "fixture://signal-count/risk/v1"
+        ],
+        "confidence": 0.69,
+        "job_id": "public-fixture-job-001",
+        "node_role": "risk",
+        "peer_id": "peer-risk-public-fixture",
+        "receipt_status": "validated",
+        "ree_model_name": "fixture/signal-count-ree",
+        "ree_prompt_hash": "sha256:9946521aa9c732013ff7762b2dc64336dce32c7eb9cdbc6762063cdef5ceb917",
+        "ree_receipt_body": {
+          "commit_hash": "sha256:eafbe608f6649aa25e70383ab0dccc1cf923f0dcc9bc8429cb85b815de79b62f",
+          "config_hash": "sha256:37520f8bc56f8f41e2d0b4dc78b556365d00de33355ca59ff38ecedd3de8cbc3",
+          "device_name": "not-executed",
+          "device_type": "fixture",
+          "finish_reason": "fixture",
+          "model_name": "fixture/signal-count-ree",
+          "parameters": {
+            "max_new_tokens": 64,
+            "temperature": 0
+          },
+          "parameters_hash": "sha256:6da9ba600f8cec4b0003aa7863e8f506c090a0e1c82e90572d5921889cc15fbf",
+          "prompt": "Synthetic fixture: identify a counter-thesis and invalidation trigger.",
+          "prompt_hash": "sha256:9946521aa9c732013ff7762b2dc64336dce32c7eb9cdbc6762063cdef5ceb917",
+          "receipt_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+          "ree_version": "not-a-live-ree-run",
+          "text_output": "Synthetic fixture output; no model inference was performed.",
+          "token_count": 0,
+          "tokens_hash": "sha256:017f29da85b503e776a765bf7bbda2bc48b203b3fd5db02e88593d758de6a5eb",
+          "version": "fixture-v1"
+        },
+        "ree_receipt_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+        "ree_receipt_path": null,
+        "ree_tokens_hash": "sha256:017f29da85b503e776a765bf7bbda2bc48b203b3fd5db02e88593d758de6a5eb",
+        "risks": [
+          "fixture risk: liquidity conditions tighten",
+          "fixture risk: support fails"
+        ],
+        "scenario_view": {
+          "base": 0.36,
+          "bear": 0.4,
+          "bull": 0.24
+        },
+        "signals": [
+          "counter_thesis: the upside catalyst may already be priced in",
+          "invalidation: support breaks while volatility expands"
+        ],
+        "summary": "The synthetic counter-thesis is that weaker flows, tighter liquidity, and a support break invalidate the fixture upside case.",
+        "timestamp": "2026-07-13T00:00:00Z"
+      },
+      "signature": {
+        "algorithm": "eip191",
+        "output_hash": "0x797ab0e0bd61d4f2a3d4ddd058dd6d83283c16a35ecb56ab8e730036c8b7b076",
+        "signature": "0x844a43d191a1aaa7ef68a1f206106cc9351d5c452f617668e5784544fdf805da23e0e6a6471cd45b58531c793355b60e7aeadf5bd3c1621e167ad881fa6c1b9b1c",
+        "signer": "0xDf88330BfFD169144c2c1D00177332E610CeDA54",
+        "task_hash": "0x5878bdec61c302efc0e4d3ea6df5ad0f8dfa09f8285c0a7e4de7c421ae289e1f"
+      },
+      "task": {
+        "asset": "ETH",
+        "horizon_days": 30,
+        "job_id": "public-fixture-job-001",
+        "thesis": "ETH upside depends on stable liquidity, but the fixture thesis fails if support breaks while volatility expands."
+      }
+    }
+  ],
+  "source_fixture": {
+    "path": "app/evidence/fixtures/public_signed_run.json",
+    "sha256": "23508e293ec8784f72e63acf67ac7807c1c13ff382ef281a4152cbea3905a1ad"
+  },
+  "task": {
+    "asset": "ETH",
+    "horizon_days": 30,
+    "job_id": "public-fixture-job-001",
+    "thesis": "ETH upside depends on stable liquidity, but the fixture thesis fails if support breaks while volatility expands."
+  },
+  "topology": {
+    "local_peer_id": "peer-coordinator-public-fixture",
+    "mode": "fixture-selection-only",
+    "peers": [
+      "peer-regime-public-fixture",
+      "peer-narrative-public-fixture",
+      "peer-risk-public-fixture"
+    ]
+  },
+  "verification_summary": {
+    "all_attestations_accepted": true,
+    "all_checks_passed": true,
+    "all_receipt_claims_valid": true,
+    "signed_executions": 3,
+    "signed_verifier_attestations": 3,
+    "valid_execution_signatures": 3,
+    "valid_verifier_signatures": 3
+  },
+  "verifier_attestations": [
+    {
+      "agent_wallet": "0x42171C3241725317ACC71e41DA8e9CfD96b1256b",
+      "attestation_hash": "0x55bb3bc508fc3e74835f2ae00a400825a0644b9f31dd41a20013584942ce6da1",
+      "job_id": "public-fixture-job-001",
+      "node_role": "regime",
+      "output_hash": "0x989ec6753a931182d010822d5030d149bbc7bce99f58a816319f6da862dd223f",
+      "peer_id": "peer-regime-public-fixture",
+      "reasons": [
+        "deterministic_score=0.8500",
+        "citations_present",
+        "risks_present"
+      ],
+      "receipt_status": null,
+      "ree_model_name": null,
+      "ree_prompt_hash": null,
+      "ree_receipt_body": null,
+      "ree_receipt_hash": null,
+      "ree_receipt_path": null,
+      "ree_tokens_hash": null,
+      "score": 0.85,
+      "signature_algorithm": "eip191",
+      "signer": "0x42171C3241725317ACC71e41DA8e9CfD96b1256b",
+      "status": "accepted",
+      "verifier": "0xF1abB36890F5B83635B5e8c4795699B3fFeb6507",
+      "verifier_signature": "0x821529013d76b0fb51ef5a00c604e2a458cc1bece3b2bb8c3020f0ca9382ccaa4176d3aeb3499a00a58b1eead12decfc042103e5d59781d676297cc65ae0c5c61b"
+    },
+    {
+      "agent_wallet": "0xfC6F26Cbd8061AE6Fb2d7f0570C7C85052B92f9d",
+      "attestation_hash": "0x7ded865d4474ee57fd7f1c565afa8ea00ffca72f856edc579b19b3704e43fe99",
+      "job_id": "public-fixture-job-001",
+      "node_role": "narrative",
+      "output_hash": "0xd05712864f730f40b927ae46404aecb0bfa1b058c770436768ce2fdd64fd48ab",
+      "peer_id": "peer-narrative-public-fixture",
+      "reasons": [
+        "deterministic_score=0.8500",
+        "citations_present",
+        "risks_present"
+      ],
+      "receipt_status": null,
+      "ree_model_name": null,
+      "ree_prompt_hash": null,
+      "ree_receipt_body": null,
+      "ree_receipt_hash": null,
+      "ree_receipt_path": null,
+      "ree_tokens_hash": null,
+      "score": 0.85,
+      "signature_algorithm": "eip191",
+      "signer": "0xfC6F26Cbd8061AE6Fb2d7f0570C7C85052B92f9d",
+      "status": "accepted",
+      "verifier": "0xF1abB36890F5B83635B5e8c4795699B3fFeb6507",
+      "verifier_signature": "0x4e7e85cbc569ca6e48251ea4a2cdb8d9c221d01268721423391f3f199145092753b5f706947daaad64c3d316e3687be0a85ffd39f5f2818266bcfdd9b6e74b001c"
+    },
+    {
+      "agent_wallet": "0xDf88330BfFD169144c2c1D00177332E610CeDA54",
+      "attestation_hash": "0xb52830dc84147a8126125893066132c15a9426eb239742138da19ab02b09c8e6",
+      "job_id": "public-fixture-job-001",
+      "node_role": "risk",
+      "output_hash": "0x797ab0e0bd61d4f2a3d4ddd058dd6d83283c16a35ecb56ab8e730036c8b7b076",
+      "peer_id": "peer-risk-public-fixture",
+      "reasons": [
+        "deterministic_score=0.9775",
+        "receipt_status=validated",
+        "citations_present",
+        "risks_present"
+      ],
+      "receipt_status": "validated",
+      "ree_model_name": "fixture/signal-count-ree",
+      "ree_prompt_hash": "sha256:9946521aa9c732013ff7762b2dc64336dce32c7eb9cdbc6762063cdef5ceb917",
+      "ree_receipt_body": {
+        "commit_hash": "sha256:eafbe608f6649aa25e70383ab0dccc1cf923f0dcc9bc8429cb85b815de79b62f",
+        "config_hash": "sha256:37520f8bc56f8f41e2d0b4dc78b556365d00de33355ca59ff38ecedd3de8cbc3",
+        "device_name": "not-executed",
+        "device_type": "fixture",
+        "finish_reason": "fixture",
+        "model_name": "fixture/signal-count-ree",
+        "parameters": {
+          "max_new_tokens": 64,
+          "temperature": 0
+        },
+        "parameters_hash": "sha256:6da9ba600f8cec4b0003aa7863e8f506c090a0e1c82e90572d5921889cc15fbf",
+        "prompt": "Synthetic fixture: identify a counter-thesis and invalidation trigger.",
+        "prompt_hash": "sha256:9946521aa9c732013ff7762b2dc64336dce32c7eb9cdbc6762063cdef5ceb917",
+        "receipt_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+        "ree_version": "not-a-live-ree-run",
+        "text_output": "Synthetic fixture output; no model inference was performed.",
+        "token_count": 0,
+        "tokens_hash": "sha256:017f29da85b503e776a765bf7bbda2bc48b203b3fd5db02e88593d758de6a5eb",
+        "version": "fixture-v1"
+      },
+      "ree_receipt_hash": "sha256:2e4bc1e507ad1b2f99a165505c63a0a1358c04c21659a22dc1da507075901d40",
+      "ree_receipt_path": null,
+      "ree_tokens_hash": "sha256:017f29da85b503e776a765bf7bbda2bc48b203b3fd5db02e88593d758de6a5eb",
+      "score": 0.9775,
+      "signature_algorithm": "eip191",
+      "signer": "0xDf88330BfFD169144c2c1D00177332E610CeDA54",
+      "status": "accepted",
+      "verifier": "0xF1abB36890F5B83635B5e8c4795699B3fFeb6507",
+      "verifier_signature": "0x0408d3ed9f48df9f88eadba72ea0c5e7ac2d01030490536fefb495342e8dab3f38bb188a2fb0798841e33638fd2ea2d64e78c3b52160868c905a9e4d648d4c1f1b"
+    }
+  ]
+}

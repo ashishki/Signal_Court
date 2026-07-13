@@ -49,6 +49,17 @@ ATTACKS: tuple[Attack, ...] = (
         expected_failed_checks=("signature_recovers_signer",),
     ),
     Attack(
+        name="agent_wallet_substitution",
+        description=(
+            "Replace response.agent_wallet with a different address while keeping "
+            "the victim's signed identity."
+        ),
+        expected_failed_checks=(
+            "output_hash_match",
+            "response_wallet_matches_identity",
+        ),
+    ),
+    Attack(
         name="role_substitution",
         description=(
             "Identity claims role=risk while response carries node_role=narrative."
@@ -89,16 +100,32 @@ def forged_signature_with_attacker_key(
         peer_id=honest.identity.peer_id,
         wallet=attacker_address,
     )
+    spoof_response = honest.response.model_copy(
+        update={"agent_wallet": attacker_address}
+    )
     resigned = sign_agent_execution(
         task=honest.task,
-        response=honest.response,
+        response=spoof_response,
         identity=spoof_identity,
         private_key=attacker_private_key,
     )
     forged_envelope = resigned.signature.model_copy(
-        update={"signer": honest.identity.wallet}
+        update={
+            "signer": honest.identity.wallet,
+            "output_hash": honest.signature.output_hash,
+        }
     )
     return honest.model_copy(update={"signature": forged_envelope})
+
+
+def agent_wallet_substitution(
+    honest: SignedAgentExecution,
+    attacker_address: str,
+) -> SignedAgentExecution:
+    tampered_response = honest.response.model_copy(
+        update={"agent_wallet": attacker_address}
+    )
+    return honest.model_copy(update={"response": tampered_response})
 
 
 def role_substitution(honest: SignedAgentExecution) -> SignedAgentExecution:
@@ -123,6 +150,7 @@ ATTACK_FUNCTIONS = {
     "field_tamper_after_sign": field_tamper_after_sign,
     "signer_swap_in_envelope": signer_swap_in_envelope,
     "forged_signature_with_attacker_key": forged_signature_with_attacker_key,
+    "agent_wallet_substitution": agent_wallet_substitution,
     "role_substitution": role_substitution,
     "receipt_status_overclaim": receipt_status_overclaim,
 }

@@ -1,0 +1,38 @@
+{
+  "artifact": {
+    "content_address": "sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e",
+    "path": "evidence.json",
+    "sha256": "0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e"
+  },
+  "environment": {
+    "path": "environment.json",
+    "sha256": "f6e8fa53ccb6fb8731ce79e8411ed17a524820ac4e3245e878df09f46b657ce3"
+  },
+  "schema": "signal-count.public-evidence-manifest/v1",
+  "sources": {
+    ".github/workflows/ci.yml": "f8a4fadae4b82579f051dc041aaece7c718129152a43f738444c344ca93c80f1",
+    "app/axl/registry.py": "c4c8fd5caecbe8a034d404ed08392c5d2f10d771ec38768337dfc15286c2ed3b",
+    "app/chain/explorer.py": "16eb106909bd4ccab3069bc5dcbaceffa4cc464b415324786ba64ba22489fa91",
+    "app/config/settings.py": "6e0d26d3606e60192a026e506dcbf58f86264eb3a3fad54d9dd540a0b768ec5b",
+    "app/evaluation/attestations.py": "1e44e791e74adb26ce8a646e627ea3c237b8319dc1ebc09c6b0ca28445986b5e",
+    "app/evaluation/scoring.py": "3bcb08a2dd8be713be4f514aee077f01deef93d0ff4ba26f0988ef104fac2eac",
+    "app/evidence/fixtures/public_signed_run.json": "23508e293ec8784f72e63acf67ac7807c1c13ff382ef281a4152cbea3905a1ad",
+    "app/evidence/public_fixture.py": "6519267c49c0bef4698f2d0e0db95c9ceeaea6c8336a7b21f40583ef327d32d5",
+    "app/identity/canonical.py": "8201510e06d68bc8b0709896e48c055a17ecb9e44c07d0c4a4d46dad18ee82a7",
+    "app/identity/hashing.py": "27d4eb4fc903b8827ba4cdad009791633df97bb4f2238f6415cefd2a089aa80e",
+    "app/identity/signing.py": "2b72ecac86489432c53c63ef5adaef2b868e57cade2bdec4200baa70ad0c8640",
+    "app/nodes/verifier/service.py": "9d6ab9bc2aca0d5977c809604c265e77dd2a350d579a259a4ce59f15b558b4ee",
+    "app/ree/claims.py": "9c50478c252d4d45229da9b2bd108f0c459d9c0eb2991db126d44bb93dfcecda",
+    "app/ree/fixtures/synthetic_public_receipt.json": "3558a88e3cfa8706eb19f35d91359ba9692f04c60b39fdd806742a53ee914a8b",
+    "app/ree/receipts.py": "36ef058ec860feec37d0423b82d553baff6a0e55202b46f396c14a7c09a92503",
+    "app/ree/validator.py": "292e7e7685d07a118eca96d3ff36abcdb6f8e92331aedd54d8d5081311e3d2f4",
+    "app/schemas/contracts.py": "9f5bc6f023bb9ca42ac42004c4fab782d41c81c7c7c948775fe329dd80aef49a",
+    "docs/gensyn-contracts.md": "8cbc10eeb75d3d714c22599b9fa92adc370c0f0cc2b1d1752985223f29b6a6c1",
+    "pyproject.toml": "c9f019d60c0e794080eefbf2e1d96fe82387ec2723c37f8d5dcddedbd30c8e19",
+    "requirements-dev.txt": "76009fd5eb6922bcb19e1dc417be23744f069783bb0900ba1e16200be5abf2d7",
+    "requirements-lock.txt": "c09006eb70aa1dda889a0744476f92100c8a4f259dd08534ee0c646b709eb3ae",
+    "requirements.txt": "dc41f35e3fca26f7f8b1c79027591be4912b303f21457752733e76a3a25d4918",
+    "scripts/build_public_evidence.py": "e414ec13457aa6bc2dce153d05ba94659f993fe234ef5de9a541019eda074b22"
+  },
+  "verification_command": "python scripts/build_public_evidence.py --verify evidence/public-fixture-v1"
+}

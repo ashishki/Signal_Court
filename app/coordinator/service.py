@@ -43,6 +43,10 @@ class ResponseVerifier(Protocol):
     ) -> list[VerificationAttestation]: ...
 
 
+class InvalidSpecialistResponseError(ValueError):
+    """Raised when a transport response does not match its dispatch context."""
+
+
 @dataclass(frozen=True)
 class CoordinatorDispatchResult:
     responses: list[SpecialistResponse]
@@ -289,8 +293,18 @@ class CoordinatorService:
                     service_name=peer_service.service_name,
                     payload=payload,
                 )
+                _validate_response_context(
+                    response=response,
+                    job_id=job_id,
+                    role=role,
+                    peer_id=peer_service.peer_id,
+                )
             except TimeoutError:
                 last_status = "timed_out"
+                failed_peer_ids.add(peer_service.peer_id)
+                continue
+            except InvalidSpecialistResponseError:
+                last_status = "invalid_response"
                 failed_peer_ids.add(peer_service.peer_id)
                 continue
             except Exception:
@@ -431,6 +445,28 @@ class CoordinatorService:
 
 def _elapsed_ms(started_at: float) -> float:
     return round((perf_counter() - started_at) * 1000, 3)
+
+
+def _validate_response_context(
+    *,
+    response: SpecialistResponse,
+    job_id: str,
+    role: str,
+    peer_id: str,
+) -> None:
+    mismatches = [
+        field
+        for field, expected, observed in (
+            ("job_id", job_id, response.job_id),
+            ("node_role", role, response.node_role),
+            ("peer_id", peer_id, response.peer_id),
+        )
+        if observed != expected
+    ]
+    if mismatches:
+        raise InvalidSpecialistResponseError(
+            "specialist response context mismatch: " + ",".join(mismatches)
+        )
 
 
 def _fallback_reason(
