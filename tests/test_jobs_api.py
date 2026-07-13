@@ -4,12 +4,18 @@ from pathlib import Path
 from uuid import UUID
 
 import httpx
+import pytest
+from eth_account import Account
 from httpx import ASGITransport
 
 from app.chain.receipts import ChainReceipt, JobChainReceipts
 from app.chain.verification import ChainTxVerification
 from app.coordinator.service import CoordinatorDispatchResult
 from app.coordinator.synthesis import MemoSynthesisService
+from app.evaluation.attestations import (
+    verification_attestation_hash,
+    verification_attestation_message,
+)
 from app.evaluation.reputation import build_reputation_updates
 from app.identity.hashing import canonical_json_hash
 from app.main import app
@@ -23,6 +29,7 @@ from app.store import JobStore
 
 
 REE_FIXTURES = Path(__file__).parent / "fixtures" / "ree"
+TEST_VERIFIER_PRIVATE_KEY = "0x" + "01" * 32
 
 
 class StubCoordinator:
@@ -391,6 +398,65 @@ def test_job_verify_endpoint_returns_proof_bundle(tmp_path: Path) -> None:
     assert checks["ree"]["items"][0]["receipt_hash"] == "sha256:" + "22" * 32
     assert checks["chain"]["status"] == "present"
     assert checks["chain"]["items"][0]["tx_hash"] == "0x" + "33" * 32
+
+
+def test_job_verify_endpoint_recomputes_signed_attestation_hash(
+    tmp_path: Path,
+) -> None:
+    _configure_test_store(tmp_path)
+
+    async def _exercise() -> dict[str, object]:
+        job_id = await _create_completed_job_with_signed_attestation()
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            return (await client.get(f"/jobs/{job_id}/verify")).json()
+
+    payload = asyncio.run(_exercise())
+
+    attestations = payload["checks"]["attestations"]
+    assert attestations["status"] == "verified"
+    assert attestations["items"][0]["status"] == "verified"
+
+
+@pytest.mark.parametrize(
+    ("field", "tampered_value"),
+    [
+        ("attestation_hash", "0x" + "00" * 32),
+        ("verifier_signature", "0x" + "00" * 65),
+        ("job_id", "job-attacker"),
+        ("node_role", "regime"),
+        ("peer_id", "peer-attacker"),
+        ("status", "rejected"),
+        ("score", 0.01),
+        ("reasons", ["tampered_after_signing"]),
+        ("signature_algorithm", "untrusted"),
+    ],
+)
+def test_job_verify_endpoint_rejects_tampered_signed_attestation_fields(
+    tmp_path: Path,
+    field: str,
+    tampered_value: object,
+) -> None:
+    _configure_test_store(tmp_path)
+
+    async def _exercise() -> dict[str, object]:
+        job_id = await _create_completed_job_with_signed_attestation(
+            mutation=(field, tampered_value)
+        )
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            return (await client.get(f"/jobs/{job_id}/verify")).json()
+
+    payload = asyncio.run(_exercise())
+
+    assert payload["status"] == "failed"
+    attestations = payload["checks"]["attestations"]
+    assert attestations["status"] == "failed"
+    assert attestations["items"][0]["status"] == "failed"
 
 
 def test_job_verify_endpoint_marks_missing_evidence(tmp_path: Path) -> None:
@@ -877,5 +943,62 @@ async def _create_completed_job_with_metadata(
             }
         ],
         run_metadata=metadata,
+    )
+    return job.job_id
+
+
+async def _create_completed_job_with_signed_attestation(
+    *,
+    mutation: tuple[str, object] | None = None,
+) -> str:
+    request = ThesisRequest(
+        thesis="ETH can rally on improving ETF flows.",
+        asset="ETH",
+        horizon_days=30,
+    )
+    job = await app.state.job_store.create_job(request)
+    unsigned = VerificationAttestation(
+        job_id=job.job_id,
+        node_role="risk",
+        peer_id="peer-risk-test",
+        status="accepted",
+        score=0.91,
+        reasons=["deterministic_score=0.9100", "risks_present"],
+        signer="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+        agent_wallet="0xFCAd0B19bB29D4674531d6f115237E16AfCE377c",
+        output_hash="0x" + "11" * 32,
+    )
+    attestation_hash = verification_attestation_hash(unsigned)
+    verifier = Account.from_key(TEST_VERIFIER_PRIVATE_KEY).address
+    signature = Account.sign_message(
+        verification_attestation_message(attestation_hash),
+        private_key=TEST_VERIFIER_PRIVATE_KEY,
+    )
+    signed = unsigned.model_copy(
+        update={
+            "verifier": verifier,
+            "attestation_hash": attestation_hash,
+            "verifier_signature": f"0x{signature.signature.hex()}",
+            "signature_algorithm": "eip191",
+        }
+    ).model_dump(mode="json")
+    if mutation is not None:
+        field, value = mutation
+        signed[field] = value
+
+    memo = await MemoSynthesisService(llm_client=FailingLLMClient()).synthesize(
+        job_id=job.job_id,
+        request=request,
+        dispatch_result=CoordinatorDispatchResult(
+            responses=[],
+            topology_snapshot={},
+            market_snapshot={},
+            news_headlines=[],
+        ),
+    )
+    await app.state.job_store.complete_job(
+        job_id=job.job_id,
+        memo=memo,
+        run_metadata={"verification_attestations": [signed]},
     )
     return job.job_id

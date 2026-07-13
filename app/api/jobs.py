@@ -4,19 +4,17 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from eth_account import Account
-from eth_account.messages import encode_defunct
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.chain.receipts import ChainReceipt, JobChainReceipts
 from app.chain.verification import ChainTxVerification
 from app.coordinator.service import CoordinatorDispatchResult
-from app.identity.canonical import canonical_json_bytes
+from app.evaluation.attestations import verify_verification_attestation
 from app.identity.hashing import canonical_json_hash
 from app.observability.provenance import NodeExecutionRecord
 from app.ree.receipts import parse_ree_receipt
 from app.ree.validator import validate_ree_receipt
-from app.schemas.contracts import FinalMemo, ThesisRequest
+from app.schemas.contracts import FinalMemo, ThesisRequest, VerificationAttestation
 from app.store import JobStore
 
 
@@ -187,6 +185,7 @@ def _build_job_verification_bundle(
     *,
     chain_tx_verifier: ChainTxVerifier | None = None,
 ) -> dict[str, object]:
+    job_id = str(job.get("job_id", ""))
     run_metadata = _as_dict(job.get("run_metadata"))
     attestations = _as_dict_list(run_metadata.get("verification_attestations"))
     specialist_responses = _as_dict_list(run_metadata.get("specialist_responses"))
@@ -194,7 +193,10 @@ def _build_job_verification_bundle(
 
     checks = {
         "output_hashes": _verify_output_hashes(attestations, specialist_responses),
-        "attestations": _verify_attestations(attestations),
+        "attestations": _verify_attestations(
+            attestations,
+            expected_job_id=job_id,
+        ),
         "ree": _verify_ree_evidence(attestations, chain_receipts),
         "chain": _verify_chain_receipts(
             chain_receipts,
@@ -202,7 +204,7 @@ def _build_job_verification_bundle(
         ),
     }
     return {
-        "job_id": str(job.get("job_id", "")),
+        "job_id": job_id,
         "status": _rollup_status([check["status"] for check in checks.values()]),
         "checks": checks,
     }
@@ -236,10 +238,15 @@ def _verify_output_hashes(
 
 def _verify_attestations(
     attestations: list[dict[str, object]],
+    *,
+    expected_job_id: str,
 ) -> dict[str, object]:
     items = []
     for attestation in attestations:
-        signature_status = _verify_attestation_signature(attestation)
+        signature_status = _verify_attestation_signature(
+            attestation,
+            expected_job_id=expected_job_id,
+        )
         items.append(
             {
                 "role": str(attestation.get("node_role", "")),
@@ -251,32 +258,23 @@ def _verify_attestations(
     return {"status": _items_status(items), "items": items}
 
 
-def _verify_attestation_signature(attestation: dict[str, object]) -> str:
+def _verify_attestation_signature(
+    attestation: dict[str, object],
+    *,
+    expected_job_id: str,
+) -> str:
     attestation_hash = attestation.get("attestation_hash")
     verifier = attestation.get("verifier")
     signature = attestation.get("verifier_signature")
     if not attestation_hash and not signature and not verifier:
         return "present"
-    if not (
-        isinstance(attestation_hash, str)
-        and isinstance(verifier, str)
-        and isinstance(signature, str)
-    ):
-        return "missing"
-
     try:
-        message = encode_defunct(
-            primitive=canonical_json_bytes(
-                {
-                    "domain": "signal-count.verifier-attestation",
-                    "attestation_hash": attestation_hash,
-                }
-            )
-        )
-        recovered = Account.recover_message(message, signature=signature)
+        parsed = VerificationAttestation.model_validate(attestation)
     except Exception:
         return "failed"
-    return "verified" if recovered.lower() == verifier.lower() else "failed"
+    if parsed.job_id != expected_job_id:
+        return "failed"
+    return "verified" if verify_verification_attestation(parsed) else "failed"
 
 
 def _verify_ree_evidence(
