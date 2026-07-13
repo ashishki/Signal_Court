@@ -35,6 +35,7 @@ def test_ci_workflow_uses_placeholder_env_values() -> None:
 def test_ci_workflow_has_read_only_permissions_and_bounded_runtime() -> None:
     content = CI_PATH.read_text(encoding="utf-8")
 
+    assert content.index("  pull_request:") < content.index("permissions:")
     assert "permissions:\n  contents: read" in content
     assert "runs-on: ubuntu-24.04" in content
     assert "timeout-minutes: 15" in content
