@@ -28,10 +28,12 @@ receipt_status falls back to "parsed".
 
 from __future__ import annotations
 
+import fcntl
 import json
 import subprocess
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -138,29 +140,28 @@ class ReeRunner:
 
         args = self.build_args(request, prompt_path=prompt_path)
 
-        existing = self._snapshot_receipts()
+        with self._cache_invocation_lock():
+            existing = self._snapshot_receipts()
+            try:
+                self._runner(
+                    args,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    shell=False,
+                )
+            except subprocess.CalledProcessError as exc:
+                raise ReeRunnerError(
+                    f"REE subprocess failed with exit code {exc.returncode}"
+                    f"{_format_subprocess_output(exc)}"
+                ) from exc
+            except FileNotFoundError as exc:
+                raise ReeRunnerError(
+                    "REE command was not found. Clone github.com/gensyn-ai/ree and "
+                    "set GENSYN_SDK_COMMAND to the full path of ree.sh."
+                ) from exc
 
-        try:
-            self._runner(
-                args,
-                check=True,
-                capture_output=True,
-                text=True,
-                shell=False,
-            )
-        except subprocess.CalledProcessError as exc:
-            raise ReeRunnerError(
-                f"REE subprocess failed with exit code {exc.returncode}"
-                f"{_format_subprocess_output(exc)}"
-            ) from exc
-        except FileNotFoundError as exc:
-            raise ReeRunnerError(
-                "REE command was not found. Clone github.com/gensyn-ai/ree and set "
-                "GENSYN_SDK_COMMAND to the full path of ree.sh."
-            ) from exc
-
-        receipt_path = self._find_new_receipt(existing)
-        receipt = parse_ree_receipt(receipt_path)
+            receipt_path, receipt = self._find_new_receipt(existing, request=request)
         validation = validate_ree_receipt(receipt)
         receipt_status = "validated" if validation.matches else "parsed"
         return ReeRunOutcome(
@@ -177,8 +178,28 @@ class ReeRunner:
             return set()
         return set(gensyn_cache.glob("**/receipt_*.json"))
 
-    def _find_new_receipt(self, before: set[Path]) -> Path:
-        """Return the receipt written by the most recent run."""
+    @contextmanager
+    def _cache_invocation_lock(self) -> Iterator[None]:
+        """Serialize receipt discovery for runners sharing one Gensyn cache."""
+
+        gensyn_cache = self._cache_dir / "gensyn"
+        gensyn_cache.mkdir(parents=True, exist_ok=True)
+        lock_path = gensyn_cache / ".signal-count-ree.lock"
+        with lock_path.open("a+b") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    def _find_new_receipt(
+        self,
+        before: set[Path],
+        *,
+        request: ReeRunRequest,
+    ) -> tuple[Path, ReeReceipt]:
+        """Return the unique newly-created receipt bound to this request."""
+
         gensyn_cache = self._cache_dir / "gensyn"
         after = (
             set(gensyn_cache.glob("**/receipt_*.json"))
@@ -186,16 +207,50 @@ class ReeRunner:
             else set()
         )
         new_receipts = sorted(after - before)
-        if new_receipts:
-            return new_receipts[-1]
-        # Fall back to the newest overall receipt if nothing new appeared.
-        all_receipts = sorted(after)
-        if all_receipts:
-            return all_receipts[-1]
+        matches: list[tuple[Path, ReeReceipt]] = []
+        for receipt_path in new_receipts:
+            try:
+                receipt = parse_ree_receipt(receipt_path)
+            except Exception:
+                continue
+            if _receipt_matches_request(
+                receipt,
+                request=request,
+                cpu_only=self._cpu_only or request.cpu_only,
+            ):
+                matches.append((receipt_path, receipt))
+
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise ReeRunnerError(
+                "REE produced multiple new receipts matching this invocation; "
+                "receipt attribution is ambiguous."
+            )
         raise ReeRunnerError(
-            f"REE did not produce a receipt in {gensyn_cache}. "
-            "Check that ree.sh completed successfully and Docker is available."
+            "REE did not produce exactly one new receipt bound to this invocation "
+            f"in {gensyn_cache}; observed {len(new_receipts)} new receipt file(s)."
         )
+
+
+def _receipt_matches_request(
+    receipt: ReeReceipt,
+    *,
+    request: ReeRunRequest,
+    cpu_only: bool,
+) -> bool:
+    max_new_tokens = receipt.parameters.get("max_new_tokens")
+    if (
+        receipt.model_name != request.model_name
+        or receipt.prompt.encode("utf-8") != request.prompt.encode("utf-8")
+        or type(max_new_tokens) is not int
+        or max_new_tokens != request.max_new_tokens
+    ):
+        return False
+    recorded_cpu_only = receipt.parameters.get("cpu_only")
+    if recorded_cpu_only is not None and recorded_cpu_only is not cpu_only:
+        return False
+    return not cpu_only or receipt.device_type.strip().lower() == "cpu"
 
 
 def _format_subprocess_output(exc: subprocess.CalledProcessError) -> str:
