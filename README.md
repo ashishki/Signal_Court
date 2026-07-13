@@ -11,6 +11,10 @@ signatures, signed verifier attestations, and local REE receipt consistency.
 Start with [`docs/evidence/README.md`](docs/evidence/README.md). This is an
 evidence-tag candidate, not a live-network or production release.
 
+The remote is still named `Signal_Count`. The audited, not-yet-executed rename
+plan for the exact target `signal-count` is recorded in
+[`docs/RENAME_READINESS.md`](docs/RENAME_READINESS.md).
+
 Do not trust the memo. Verify every specialist behind it.
 
 Signal Count turns one market thesis into an auditable risk memo with visible
