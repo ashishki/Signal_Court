@@ -11,7 +11,7 @@ The public-evidence gate required by the portfolio audit is satisfied for the
 rename boundary:
 
 - annotated tag object `98d9153018cbb5b34508fc1efc6f8df07f7e68a5`
-  (`evidence-v0.1.0`) peels to exact main commit
+  (`evidence-v0.1.0`) peels to the fixed evidence commit
   `9c56a9c37eff975f9d09256e7de82e177accd2fd`;
 - evidence content address
   `sha256:0b1691ae31b574072e1bac0d52a375e1cae6329bccb82f1143bc18571fa3ef2e`;
@@ -57,24 +57,32 @@ observation, not a reservation; recheck it immediately before the mutation.
 
 ## Pre-rename and mutation checklist
 
-1. Reconfirm `origin/main` and GitHub `main` are the same exact commit, CI is
-   green, the worktree is clean, and `evidence-v0.1.0` still peels to that
-   commit.
-2. Recheck that `ashishki/signal-count` is unoccupied.
-3. Create a full bundle and a sorted ref snapshot outside the repository; run
+1. Reconfirm the current local `origin/main` and GitHub `main` resolve to the
+   same exact commit; record that current SHA, confirm its CI is green, and
+   confirm the worktree is clean.
+2. Independently verify that `refs/tags/evidence-v0.1.0` is still annotated tag
+   object `98d9153018cbb5b34508fc1efc6f8df07f7e68a5` and that
+   `evidence-v0.1.0^{}` still resolves to the fixed evidence commit
+   `9c56a9c37eff975f9d09256e7de82e177accd2fd`. The evidence tag is not expected
+   to move when `main` advances.
+3. Recheck that `ashishki/signal-count` is unoccupied.
+4. Create a full bundle and a sorted ref snapshot outside the repository; run
    `git bundle verify` and record both SHA-256 values before changing settings.
-4. In GitHub repository settings, rename only `Signal_Count` to exact slug
+5. In GitHub repository settings, rename only `Signal_Count` to exact slug
    `signal-count`. Do not change visibility, default branch, history, tag, or
    release claims in the same operation.
-5. Update local `origin` to `https://github.com/ashishki/signal-count.git` only
+6. Update local `origin` to `https://github.com/ashishki/signal-count.git` only
    after the setting change succeeds.
-6. Verify the new web and clone URLs, old-URL redirect, default branch, full
+7. Verify the new web and clone URLs, old-URL redirect, default branch, full
    remote refs, tag object/peel, issue template, and a clean clone.
-7. Rerun the complete CI/evidence gate on the renamed remote and bind the run ID
+8. Rerun the complete CI/evidence gate on the renamed remote and bind the run ID
    to the unchanged or new exact commit.
-8. Repeat the old-slug current-tree and inbound-reference scans. Update active
-   portfolio/profile/umbrella links and the execution ledger; do not rewrite
-   the dated strategy-audit snapshot.
+9. Update this repository's README and this readiness/status receipt so they no
+   longer say the remote is still `Signal_Count` or that the rename has not
+   happened. Record the new URL, mutation time, exact refs, and post-rename CI.
+10. Repeat the old-slug current-tree and inbound-reference scans. Update active
+    portfolio/profile/umbrella links and the execution ledger; do not rewrite
+    the dated strategy-audit snapshot.
 
 ## Rollback
 
@@ -102,4 +110,4 @@ The execution environment has no authenticated GitHub CLI session: its bundled
 read the repository and create a pull request but exposes no repository-settings
 rename operation. Therefore this change prepares and verifies the migration but
 does not claim the remote was renamed. An authenticated settings-capable
-credential or a repository administrator must execute checklist step 4.
+credential or a repository administrator must execute checklist step 5.
