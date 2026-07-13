@@ -31,8 +31,9 @@ def check_receipt_claim(response: SpecialistResponse) -> ReceiptClaimCheck:
     must parse, its declared hash must match ``ree_receipt_hash``, and the hash
     must recompute under the supported REE algorithm. ``verified`` is reserved
     for full external re-execution, which the current response schema cannot
-    prove, so it fails closed. ``parsed`` may carry a hash without proving a
-    successful recomputation.
+    prove, so it fails closed. ``parsed`` requires structurally valid embedded
+    material and a matching declared hash, without claiming successful local
+    recomputation.
     """
 
     status = (response.receipt_status or "").strip().lower()
@@ -61,7 +62,7 @@ def check_receipt_claim(response: SpecialistResponse) -> ReceiptClaimCheck:
     if not declared_hash:
         reasons.append("receipt_hash_missing")
 
-    if status in {"validated", "verified"} and receipt_body is None:
+    if receipt_body is None:
         reasons.append("receipt_body_missing")
 
     if receipt_body is not None:

@@ -144,6 +144,18 @@ def test_verifier_rejects_verified_status_without_reexecution_evidence() -> None
     )
 
 
+def test_verifier_rejects_parsed_status_without_embedded_material() -> None:
+    response = _response().model_copy(
+        update={"receipt_status": "parsed", "ree_receipt_body": None}
+    )
+
+    attestation = VerifierService().verify_response(task=_task(), response=response)
+
+    assert attestation.status == "rejected"
+    assert "invalid_receipt_claim:receipt_body_missing" in attestation.reasons
+    assert "receipt_claim_gate=0.4900" in attestation.reasons
+
+
 def _task() -> TaskSpec:
     return TaskSpec(
         job_id="job-verifier-1",

@@ -93,6 +93,7 @@ class VerifierService:
             reasons.extend(
                 f"invalid_receipt_claim:{reason}" for reason in receipt_check.reasons
             )
+            reasons.append(f"receipt_claim_gate={score:.4f}")
         if self._missing_required_ree(response):
             score = min(score, self._acceptance_threshold - 0.01)
             reasons.append(f"required_ree_missing:{self._ree_policy}")
